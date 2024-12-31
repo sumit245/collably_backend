@@ -3,7 +3,6 @@ const Users = require("../models/userModel");
 const Comments = require("../models/commentModel");
 const { post } = require("../routes/adminRouter");
 
-
 const adminCtrl = {
   getTotalUsers: async (req, res) => {
     try {
@@ -50,7 +49,9 @@ const adminCtrl = {
     try {
       const posts = await Posts.find();
 
-      const reportedPosts = await posts.filter(post => post.reports.length > 2);
+      const reportedPosts = await posts.filter(
+        (post) => post.reports.length > 2
+      );
       const total_spam_posts = reportedPosts.length;
       res.json({ total_spam_posts });
     } catch (err) {

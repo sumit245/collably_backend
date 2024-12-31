@@ -82,10 +82,12 @@ const authCtrl = {
 
       const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
-      await Users.findOneAndUpdate({ _id: req.user._id }, { password: newPasswordHash });
+      await Users.findOneAndUpdate(
+        { _id: req.user._id },
+        { password: newPasswordHash }
+      );
 
-      res.json({ msg: "Password updated successfully." })
-
+      res.json({ msg: "Password updated successfully." });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
@@ -123,11 +125,8 @@ const authCtrl = {
         email,
         password: passwordHash,
         gender,
-        role
+        role,
       });
-
-
-
 
       await newUser.save();
 
@@ -161,7 +160,7 @@ const authCtrl = {
       res.cookie("refreshtoken", refresh_token, {
         httpOnly: true,
         path: "/api/refresh_token",
-        sameSite: 'lax',
+        sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, //validity of 30 days
       });
 
@@ -257,7 +256,7 @@ const authCtrl = {
   },
   igRegister: async (username) => {
     // Signup with instagram using oAuth2.0
-  }
+  },
 };
 
 const createAccessToken = (payload) => {

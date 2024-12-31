@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const {Schema } = mongoose;
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
 const userSchema = new Schema(
   {
@@ -50,8 +50,8 @@ const userSchema = new Schema(
     saved: [
       {
         type: mongoose.Types.ObjectId,
-        ref: 'post'
-      }
+        ref: "post",
+      },
     ],
     story: {
       type: String,
@@ -80,5 +80,4 @@ const userSchema = new Schema(
   }
 );
 
-
-module.exports = mongoose.model('user',userSchema);
+module.exports = mongoose.model("user", userSchema);
