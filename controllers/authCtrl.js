@@ -1,12 +1,44 @@
 const Users = require("../models/userModel");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const jwt = require( "jsonwebtoken" );
+const passport = require("../middleware/passport");
 
 const authCtrl = {
+
+    
+   googleLogin: passport.authenticate("google", {
+     scope: ["profile", "email"],
+   }),
+
+  // Google login callback route
+  googleCallback: (req, res) => {
+   
+    passport.authenticate("google", {
+      failureRedirect: "/login", 
+    })(req, res, () => {
+      
+      res.redirect("/profile"); 
+    });
+  },
+
+
+ instagramLogin : passport.authenticate("instagram", {
+  scope: ["user_profile", "user_media"],
+}),
+
+
+ instagramCallback : (req, res) => {
+  passport.authenticate("instagram", {
+    failureRedirect: "/login", 
+  })(req, res, () => {
+    res.redirect("/profile"); 
+  });
+},
+
   register: async (req, res) => {
     try {
       const { fullname, username, email, password, gender } = req.body;
-      // google login, meta detail
+    
       let newUserName = username.toLowerCase().replace(/ /g, "");
 
       const user_name = await Users.findOne({ username: newUserName });
@@ -82,10 +114,12 @@ const authCtrl = {
 
       const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
-      await Users.findOneAndUpdate({ _id: req.user._id }, { password: newPasswordHash });
+      await Users.findOneAndUpdate(
+        { _id: req.user._id },
+        { password: newPasswordHash }
+      );
 
-      res.json({ msg: "Password updated successfully." })
-
+      res.json({ msg: "Password updated successfully." });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
@@ -123,11 +157,8 @@ const authCtrl = {
         email,
         password: passwordHash,
         gender,
-        role
+        role,
       });
-
-
-
 
       await newUser.save();
 
@@ -161,7 +192,7 @@ const authCtrl = {
       res.cookie("refreshtoken", refresh_token, {
         httpOnly: true,
         path: "/api/refresh_token",
-        sameSite: 'lax',
+        sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, //validity of 30 days
       });
 
@@ -257,7 +288,7 @@ const authCtrl = {
   },
   igRegister: async (username) => {
     // Signup with instagram using oAuth2.0
-  }
+  },
 };
 
 const createAccessToken = (payload) => {

@@ -35,6 +35,16 @@ const userSchema = new Schema(
       type: String,
       default: "user",
     },
+<<<<<<< HEAD
+=======
+    googleID: {
+      type: String,
+    },
+    instagramID: {
+  type: String,
+},
+
+>>>>>>> 32d125459fe1860f144dc43a7520a9d7bc2dc293
     gender: {
       type: String,
       default: "male",

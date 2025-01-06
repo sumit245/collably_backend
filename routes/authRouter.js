@@ -16,7 +16,16 @@ router.post("/admin_login", authCtrl.adminLogin);
 router.post("/logout", authCtrl.logout);
 
 
-router.post("/refresh_token", authCtrl.generateAccessToken);
+router.post( "/refresh_token", authCtrl.generateAccessToken );
+
+
+router.get("/auth/google", authCtrl.googleLogin);
+router.get( "/auth/google/callback", authCtrl.googleCallback );
+
+
+router.get("/auth/instagram", authCtrl.instagramLogin);
+router.get("/auth/instagram/callback", authCtrl.instagramCallback);
+
 
 
 module.exports = router;
