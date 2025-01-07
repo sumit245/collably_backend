@@ -4,7 +4,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const SocketServer = require("./socketServer");
-const passport = require('./middleware/passport');
+const session = require("express-session");
+const passport = require("./middleware/passport");
 const corsOptions = {
   Credential: "true",
 };
@@ -15,6 +16,11 @@ app.use(express.json());
 app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(cookieParser());
+app.use(
+  session({
+    secret: process.env.ACCESS_TOKEN_SECRET,
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -36,7 +42,8 @@ app.use("/api", require("./routes/commentRouter"));
 app.use("/api", require("./routes/adminRouter"));
 app.use("/api", require("./routes/notifyRouter"));
 app.use("/api", require("./routes/messageRouter"));
-app.use("/api", require("./routes/productRouter"));
+app.use( "/api", require( "./routes/productRouter" ) );
+app.use( "/api", require( "./routes/referralRouter" ) );
 //#endregion
 
 // Passport setup
