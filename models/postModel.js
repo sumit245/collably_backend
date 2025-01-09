@@ -1,10 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 2a35ce108b00174719c771dcf7f53cc2128fea78
 const postSchema = new Schema(
   {
     content: String,
@@ -40,9 +36,4 @@ const postSchema = new Schema(
   }
 );
 
-<<<<<<< HEAD
 module.exports = mongoose.model("post", postSchema);
-=======
-
-module.exports = mongoose.model('post', postSchema);
->>>>>>> 2a35ce108b00174719c771dcf7f53cc2128fea78

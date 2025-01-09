@@ -1,6 +1,6 @@
 const Order = require("../models/orderModel");
 const User = require("../models/userModel");
-const Product = require("../models/productModel"); 
+const Product = require("../models/productModel");
 
 const orderCtrl = {
   // Create a new order
@@ -47,9 +47,7 @@ const orderCtrl = {
   // Get all orders for a specific user
   getUserOrders: async (req, res) => {
     try {
-      const orders = await Order.find({ user: req.user._id }).populate(
-        "items.product"
-      );
+      const orders = await Order.find();
       res.json({ orders });
     } catch (err) {
       console.error(err);
