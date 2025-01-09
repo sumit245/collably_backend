@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+<<<<<<< HEAD
+=======
+const generateReferralCode = require("../utils/generateReferralCode");
+>>>>>>> 2a35ce108b00174719c771dcf7f53cc2128fea78
 
 const userSchema = new Schema(
   {
@@ -41,7 +45,10 @@ const userSchema = new Schema(
     instagramID: {
       type: String,
     },
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2a35ce108b00174719c771dcf7f53cc2128fea78
     gender: {
       type: String,
       default: "male",
@@ -81,6 +88,22 @@ const userSchema = new Schema(
         ref: "user",
       },
     ],
+<<<<<<< HEAD
+=======
+    // Referral Fields:
+    referralCode: {
+      type: String,
+      unique: true,
+      default: function () {
+        return generateReferralCode(); 
+      },
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user", // This will store the referrer’s userId
+      default: null,
+    },
+>>>>>>> 2a35ce108b00174719c771dcf7f53cc2128fea78
   },
   {
     timestamps: true,

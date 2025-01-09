@@ -1,5 +1,4 @@
 require("dotenv").config();
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -43,8 +42,9 @@ app.use("/api", require("./routes/commentRouter"));
 app.use("/api", require("./routes/adminRouter"));
 app.use("/api", require("./routes/notifyRouter"));
 app.use("/api", require("./routes/messageRouter"));
-// app.use("/api", require("./routes/productRouter"));
+app.use("/api", require("./routes/productRouter"));
 app.use("/api", require("./routes/referralRouter"));
+app.use("/api", require("./routes/orderRouter"));
 //#endregion
 
 // Passport setup

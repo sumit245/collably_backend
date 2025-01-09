@@ -38,7 +38,7 @@ exports.getReferralByName = async (req, res) => {
   try {
     const referrals = await Referral.find({
       name: new RegExp(req.params.name, "i"),
-    });
+    }); 
 
     if (referrals.length === 0) {
       return res

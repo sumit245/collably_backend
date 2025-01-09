@@ -15,10 +15,10 @@ const referralSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  // referredBy: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "Referral",
-  // },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Referral",
+  },
   createdAt: {
     type: Date,
     default: Date.now,

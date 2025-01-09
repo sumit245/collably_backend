@@ -1,5 +1,6 @@
-const Conversations = require("../models/conversationModel");
-const Messages = require("../models/messageModel");
+const Conversations = require('../models/conversationModel');
+const Messages = require('../models/messageModel');
+
 
 class APIfeatures {
   constructor(query, queryString) {
@@ -87,7 +88,8 @@ const messageCtrl = {
         req.query
       ).paginating();
 
-      const messages = await features.query.sort("-createdAt");
+      const messages = await features.query
+        .sort("-createdAt");
 
       res.json({
         messages,

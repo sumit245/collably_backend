@@ -1,4 +1,5 @@
-const Notifies = require("../models/notifyModel");
+const Notifies = require( '../models/notifyModel' );
+
 
 const notifyCtrl = {
   createNotify: async (req, res) => {
@@ -23,6 +24,7 @@ const notifyCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  
 
   removeNotify: async (req, res) => {
     try {
