@@ -43,7 +43,7 @@ app.use("/api", require("./routes/commentRouter"));
 app.use("/api", require("./routes/adminRouter"));
 app.use("/api", require("./routes/notifyRouter"));
 app.use("/api", require("./routes/messageRouter"));
-app.use("/api", require("./routes/productRouter"));
+// app.use("/api", require("./routes/productRouter"));
 app.use("/api", require("./routes/referralRouter"));
 //#endregion
 
