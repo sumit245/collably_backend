@@ -3,28 +3,28 @@ const User = require("../models/userModel");
 const Product = require("../models/productModel"); 
 
 const orderCtrl = {
-  // Create a new order
+
   createOrder: async (req, res) => {
     try {
       const { items, shippingAddress, totalAmount, paymentStatus } = req.body;
 
-      // Ensure the user exists
+      
       const user = await User.findById(req.user._id);
       if (!user) {
         return res.status(404).json({ msg: "User not found" });
       }
 
-      // Validate each item (product and quantity)
-      for (let item of items) {
-        const product = await Product.findById(item.product);
-        if (!product) {
-          return res
-            .status(404)
-            .json({ msg: `Product with id ${item.product} not found` });
-        }
-      }
+   
+      // for (let item of items) {
+      //   const product = await Product.findById(item.product);
+      //   if (!product) {
+      //     return res
+      //       .status(404)
+      //       .json({ msg: `Product with id ${item.product} not found` });
+      //   }
+      // }
 
-      // Create the order
+  
       const newOrder = new Order({
         user: req.user._id,
         items,
@@ -44,12 +44,10 @@ const orderCtrl = {
     }
   },
 
-  // Get all orders for a specific user
+ 
   getUserOrders: async (req, res) => {
     try {
-      const orders = await Order.find({ user: req.user._id }).populate(
-        "items.product"
-      );
+      const orders = await Order.find({ user: req.user._id });
       res.json({ orders });
     } catch (err) {
       console.error(err);
@@ -57,7 +55,7 @@ const orderCtrl = {
     }
   },
 
-  // Get a specific order by its ID
+
   getOrderById: async (req, res) => {
     try {
       const order = await Order.findById(req.params.id).populate(
@@ -73,7 +71,6 @@ const orderCtrl = {
     }
   },
 
-  // Update order status (e.g., from 'pending' to 'shipped')
   updateOrderStatus: async (req, res) => {
     try {
       const { status } = req.body;
@@ -100,7 +97,7 @@ const orderCtrl = {
     }
   },
 
-  // Get all orders (for admins)
+
   getAllOrders: async (req, res) => {
     try {
       const orders = await Order.find()
@@ -113,7 +110,7 @@ const orderCtrl = {
     }
   },
 
-  // Cancel an order (by user)
+ 
   cancelOrder: async (req, res) => {
     try {
       const order = await Order.findById(req.params.id);
