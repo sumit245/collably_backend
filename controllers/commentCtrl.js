@@ -7,9 +7,9 @@ const commentCtrl = {
       const { postId, content, tag, reply, postUserId } = req.body;
 
       const post = await Posts.findById(postId);
-      if(!post){return res.status(400).json({ msg: "Post does not exist." });}
+      if (!post) { return res.status(400).json({ msg: "Post does not exist." }); }
 
-      if(reply){
+      if (reply) {
         const cm = await Comments.findById(reply);
         if (!cm) {
           return res.status(400).json({ msg: "Comment does not exist." });
@@ -106,16 +106,16 @@ const commentCtrl = {
       const comment = await Comments.findOneAndDelete({
         _id: req.params.id,
         $or: [
-          {user: req.user._id},
-          {postUserId: req.user._id}
+          { user: req.user._id },
+          { postUserId: req.user._id }
         ]
       });
 
-      await Posts.findOneAndUpdate({_id: comment.postId}, {
-        $pull: {comments: req.params.id}
+      await Posts.findOneAndUpdate({ _id: comment.postId }, {
+        $pull: { comments: req.params.id }
       });
-      res.json({msg: "Comment deleted successfully."});
-      
+      res.json({ msg: "Comment deleted successfully." });
+
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

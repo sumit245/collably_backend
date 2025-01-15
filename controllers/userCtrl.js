@@ -33,6 +33,18 @@ const userCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  getAllUsers: async (req, res) => {
+    try {
+      const user = await Users.find()
+      if (!user) {
+        return res.status(400).json({ msg: "requested user does not exist." });
+      }
+
+      res.json({ user });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
 
   // Update user profile
   updateUser: async (req, res) => {
@@ -70,10 +82,9 @@ const userCtrl = {
         { _id: req.params.id },
         {
           $push: {
-            followers: req.user._id,
-          },
-        },
-        { new: true }
+            followers: req.user._id
+          }
+        }
       ).populate("followers following", "-password");
 
       await Users.findOneAndUpdate(

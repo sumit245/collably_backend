@@ -1,6 +1,5 @@
 const Referral = require("../models/referralModel");
 
-
 exports.createReferral = async (req, res) => {
   try {
     const { name, email, referralCode, referredBy } = req.body;
@@ -20,7 +19,6 @@ exports.createReferral = async (req, res) => {
   }
 };
 
-
 exports.getReferralById = async (req, res) => {
   try {
     const referral = await Referral.findById(req.params.id);
@@ -35,7 +33,6 @@ exports.getReferralById = async (req, res) => {
     res.status(500).json({ message: "Error fetching referral" });
   }
 };
-
 
 exports.getReferralByName = async (req, res) => {
   try {
@@ -57,6 +54,7 @@ exports.getReferralByName = async (req, res) => {
 };
 
 exports.getAllReferrals = async (req, res) => {
+  // res.json({ "message": "I am hit" })
   try {
     const referrals = await Referral.find();
     res.json(referrals);

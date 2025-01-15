@@ -86,7 +86,7 @@ const userSchema = new Schema(
       type: String,
       unique: true,
       default: function () {
-        return generateReferralCode(); 
+        return generateReferralCode();
       },
     },
     referredBy: {

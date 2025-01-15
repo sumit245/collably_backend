@@ -17,7 +17,7 @@ const referralSchema = new mongoose.Schema({
   },
   referredBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Referral", 
+    ref: "Referral",
   },
   createdAt: {
     type: Date,
