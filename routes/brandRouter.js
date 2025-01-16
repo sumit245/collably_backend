@@ -17,11 +17,17 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Create brand (with logo and password)
 router.post(
   "/createbrand",
   upload.single("brandLogo"),
   brandController.createBrand
 );
+
+// Brand login
+router.post("/brandlogin", brandController.login);
+
+// Other existing routes...
 router.get("/getallbrands", brandController.getAllBrands);
 router.get("/getbrand/:id", brandController.getBrandById);
 router.put("/:id", upload.single("brandLogo"), brandController.updateBrand);

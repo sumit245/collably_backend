@@ -1,6 +1,5 @@
-// models/Brand.js
-
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const BrandSchema = new mongoose.Schema({
   brandName: {
@@ -42,6 +41,23 @@ const BrandSchema = new mongoose.Schema({
     required: false,
     unique: false,
   },
+  password: {
+    type: String,
+    required: true, // Make sure this is required
+  },
 });
+
+// Hash password before saving to DB
+BrandSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
+
+// Method to compare passwords
+BrandSchema.methods.comparePassword = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
 
 module.exports = mongoose.model("Brand", BrandSchema);
