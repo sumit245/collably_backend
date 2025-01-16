@@ -21,7 +21,7 @@ const BrandSchema = new mongoose.Schema({
   contactEmail: {
     type: String,
     required: false,
-    unique: false,
+    unique: true,
   },
   brandWebsite: {
     type: String,

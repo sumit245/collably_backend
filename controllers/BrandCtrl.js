@@ -2,10 +2,10 @@ const Brand = require("../models/brandModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-// JWT secret key (make sure to keep this safe in environment variables)
+
 const JWT_SECRET = "your_jwt_secret_key";
 
-// Create a new brand (with password)
+
 exports.createBrand = async (req, res) => {
   try {
     const {
@@ -17,10 +17,19 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password, // add password to the request
+      password, 
     } = req.body;
-    const brandLogo = req.file ? req.file.path : null; // Assuming logo is uploaded via Multer
+    const brandLogo = req.file ? req.file.path : null; 
 
+
+    const existingBrand = await Brand.findOne({ contactEmail });
+    if (existingBrand) {
+      return res
+        .status(400)
+        .json({ message: "Email address is already in use" });
+    }
+
+    // Create new brand
     const brand = new Brand({
       brandName,
       brandLogo,
@@ -31,8 +40,9 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password, // store the password directly
+      password, 
     });
+
 
     await brand.save();
     res.status(201).json({ message: "Brand created successfully", brand });
