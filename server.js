@@ -49,7 +49,7 @@ app.use("/api", require("./routes/messageRouter"));
 app.use( "/api", require( "./routes/productRouter" ) );
 app.use( "/api", require( "./routes/referralRouter" ) );
 app.use( "/api", require( "./routes/orderRouter" ) );
-// app.use( "/api", require( "./routes/brandRouter" ) );
+app.use( "/api", require( "./routes/brandRouter" ) );
 //#endregion
 
 // Passport setup
