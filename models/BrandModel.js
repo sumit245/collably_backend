@@ -5,42 +5,42 @@ const mongoose = require("mongoose");
 const BrandSchema = new mongoose.Schema({
   brandName: {
     type: String,
-    required: true,
+    required: false,
   },
   brandLogo: {
-    type: String, 
-    required: true,
+    type: String,
+    required: false,
   },
   brandDescription: {
     type: String,
-    required: true,
+    required: false,
   },
   brandCategory: {
     type: String,
-    required: true,
+    required: false,
   },
   contactEmail: {
     type: String,
-    required: true,
-    unique: true,
+    required: false,
+    unique: false,
   },
   brandWebsite: {
     type: String,
-    required: true,
+    required: false,
   },
   brandPhoneNumber: {
     type: String,
-    required: true,
+    required: false,
   },
   socialMediaLinks: {
     type: Map,
-    of: String, 
+    of: String,
     default: {},
   },
   gstNumber: {
     type: String,
-    required: true,
-    unique: true,
+    required: false,
+    unique: false,
   },
 });
 

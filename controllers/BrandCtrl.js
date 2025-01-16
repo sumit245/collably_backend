@@ -1,6 +1,6 @@
 // controllers/brandController.js
 
-const Brand = require("../models/Brand");
+const Brand = require("../models/brandModel");
 const path = require("path");
 
 // Create a new brand
@@ -8,6 +8,7 @@ exports.createBrand = async (req, res) => {
   try {
     const {
       brandName,
+
       brandDescription,
       brandCategory,
       contactEmail,
