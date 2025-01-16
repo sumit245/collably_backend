@@ -4,63 +4,62 @@ const jwt = require("jsonwebtoken");
 const passport = require("../middleware/passport");
 
 const authCtrl = {
-  
   googleLogin: passport.authenticate("google", {
-    scope: ["profile", "email"], 
+    scope: ["profile", "email"],
   }),
 
   googleCallback: async (req, res) => {
     passport.authenticate("google", {
-      failureRedirect: "/auth/google", 
+      failureRedirect: "/auth/google",
     })(req, res, async () => {
-      try {
-       
-        const { email, name, id } = req.user; 
+      console.log("Google user data:", req);
+      // try {
+      //   const { email, name, id } = req.user;
 
-        let user = await Users.findOne({ email });
-        if (!user) {
-          user = new Users({
-            fullname: name,
-            username: name.toLowerCase().replace(/ /g, ""), 
-            email,
-            password: "", 
-            googleId: id, 
-          });
-          await user.save(); 
-        }
+      //   let user = await Users.findOne({ email });
+      //   if (!user) {
+      //     user = new Users({
+      //       fullname: name,
+      //       username: name.toLowerCase(),
+      //       email,
+      //       password: "",
+      //       googleId: id,
+      //     });
+      //     await user.save();
+      //   }
 
-        const access_token = createAccessToken({ id: user._id });
-        const refresh_token = createRefreshToken({ id: user._id });
+      //   const access_token = createAccessToken({ id: user._id });
+      //   const refresh_token = createRefreshToken({ id: user._id });
 
-        res.cookie("refreshtoken", refresh_token, {
-          httpOnly: true,
-          path: "/api/refresh_token",
-          maxAge: 30 * 24 * 60 * 60 * 1000, 
-        });
+      //   res.cookie("refreshtoken", refresh_token, {
+      //     httpOnly: true,
+      //     path: "/api/refresh_token",
+      //     maxAge: 30 * 24 * 60 * 60 * 1000,
+      //   });
 
-        res.json({
-          msg: "Login Successful!",
-          access_token,
-          user: {
-            ...user._doc,
-            password: "", 
-          },
-        });
-      } catch (err) {
-        return res.status(500).json({ msg: err.message });
-      }
+      //   res.json({
+      //     msg: "Login Successful!",
+      //     access_token,
+      //     user: {
+      //       ...user._doc,
+      //       password: "",
+      //     },
+      //   });
+      // } catch (err) {
+      //   return res.status(500).json({ msg: err.message });
+      // }
     });
   },
 
   instagramLogin: passport.authenticate("instagram", {
-    scope: ["user_profile", "user_media"], 
+    scope: ["user_profile", "user_media"],
   }),
 
   instagramCallback: (req, res) => {
     passport.authenticate("instagram", {
-      failureRedirect: "/login", 
+      failureRedirect: "/login",
     })(req, res, () => {
-      res.redirect("/profile"); 
+      res.redirect("/profile");
     });
   },
 
@@ -288,7 +287,6 @@ const authCtrl = {
     }
   },
 
-
   generateAccessToken: async (req, res) => {
     try {
       const rf_token = req.cookies.refreshtoken;
@@ -325,13 +323,13 @@ const authCtrl = {
 // Helper functions to create access and refresh tokens
 const createAccessToken = (payload) => {
   return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: "1d", 
+    expiresIn: "1d",
   });
 };
 
 const createRefreshToken = (payload) => {
   return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: "30d", 
+    expiresIn: "30d",
   });
 };
 
