@@ -11,7 +11,7 @@ passport.use(
     {
       clientID: clientID,
       clientSecret: clientSecret,
-      callbackURL: `http://localhost:5000/api/auth/google/callback`,
+      callbackURL: `http://127.0.0.1:5000/api/auth/google/callback`,
     },
     (accessToken, refreshToken, profile, done) => {
       done(null, profile);

@@ -4,37 +4,67 @@ const jwt = require("jsonwebtoken");
 const passport = require("../middleware/passport");
 
 const authCtrl = {
-
-
+  
   googleLogin: passport.authenticate("google", {
-    scope: ["profile", "email"],
+    scope: ["profile", "email"], 
   }),
 
-  // Google login callback route
-  googleCallback: (req, res) => {
-
+  googleCallback: async (req, res) => {
     passport.authenticate("google", {
-      failureRedirect: "/login",
-    })(req, res, () => {
+      failureRedirect: "/auth/google", 
+    })(req, res, async () => {
+      try {
+       
+        const { email, name, id } = req.user; 
 
-      res.redirect("/profile");
+        let user = await Users.findOne({ email });
+        if (!user) {
+          user = new Users({
+            fullname: name,
+            username: name.toLowerCase().replace(/ /g, ""), 
+            email,
+            password: "", 
+            googleId: id, 
+          });
+          await user.save(); 
+        }
+
+        const access_token = createAccessToken({ id: user._id });
+        const refresh_token = createRefreshToken({ id: user._id });
+
+        res.cookie("refreshtoken", refresh_token, {
+          httpOnly: true,
+          path: "/api/refresh_token",
+          maxAge: 30 * 24 * 60 * 60 * 1000, 
+        });
+
+        res.json({
+          msg: "Login Successful!",
+          access_token,
+          user: {
+            ...user._doc,
+            password: "", 
+          },
+        });
+      } catch (err) {
+        return res.status(500).json({ msg: err.message });
+      }
     });
   },
 
-
   instagramLogin: passport.authenticate("instagram", {
-    scope: ["user_profile", "user_media"],
+    scope: ["user_profile", "user_media"], 
   }),
-
 
   instagramCallback: (req, res) => {
     passport.authenticate("instagram", {
-      failureRedirect: "/login",
+      failureRedirect: "/login", 
     })(req, res, () => {
-      res.redirect("/profile");
+      res.redirect("/profile"); 
     });
   },
 
+  // User registration route
   register: async (req, res) => {
     try {
       const { fullname, username, email, password, gender } = req.body;
@@ -78,6 +108,8 @@ const authCtrl = {
         maxAge: 30 * 24 * 60 * 60 * 1000, //validity of 30 days
       });
 
+      await newUser.save();
+
       res.json({
         msg: "Registered Successfully!",
         access_token,
@@ -86,15 +118,12 @@ const authCtrl = {
           password: "",
         },
       });
-
-      await newUser.save();
-
-      res.json({ msg: "registered" });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
   },
 
+  // Change password route
   changePassword: async (req, res) => {
     try {
       const { oldPassword, newPassword } = req.body;
@@ -125,6 +154,7 @@ const authCtrl = {
     }
   },
 
+  // Admin registration route
   registerAdmin: async (req, res) => {
     try {
       const { fullname, username, email, password, gender, role } = req.body;
@@ -168,6 +198,7 @@ const authCtrl = {
     }
   },
 
+  // User login route
   login: async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -197,7 +228,7 @@ const authCtrl = {
       });
 
       res.json({
-        msg: "Logged in  Successfully!",
+        msg: "Logged in Successfully!",
         access_token,
         user: {
           ...user._doc,
@@ -209,6 +240,7 @@ const authCtrl = {
     }
   },
 
+  // Admin login route
   adminLogin: async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -234,7 +266,7 @@ const authCtrl = {
       });
 
       res.json({
-        msg: "Logged in  Successfully!",
+        msg: "Logged in Successfully!",
         access_token,
         user: {
           ...user._doc,
@@ -246,6 +278,7 @@ const authCtrl = {
     }
   },
 
+  // Logout route
   logout: async (req, res) => {
     try {
       res.clearCookie("refreshtoken", { path: "/api/refresh_token" });
@@ -254,6 +287,7 @@ const authCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+
 
   generateAccessToken: async (req, res) => {
     try {
@@ -267,7 +301,7 @@ const authCtrl = {
         process.env.REFRESH_TOKEN_SECRET,
         async (err, result) => {
           if (err) {
-            res.status(400).json({ msg: "Please login again." });
+            return res.status(400).json({ msg: "Please login again." });
           }
 
           const user = await Users.findById(result.id)
@@ -275,7 +309,7 @@ const authCtrl = {
             .populate("followers following", "-password");
 
           if (!user) {
-            res.status(400).json({ msg: "User does not exist." });
+            return res.status(400).json({ msg: "User does not exist." });
           }
 
           const access_token = createAccessToken({ id: result.id });
@@ -286,20 +320,18 @@ const authCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-  igRegister: async (username) => {
-    // Signup with instagram using oAuth2.0
-  },
 };
 
+// Helper functions to create access and refresh tokens
 const createAccessToken = (payload) => {
   return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: "1d",
+    expiresIn: "1d", 
   });
 };
 
 const createRefreshToken = (payload) => {
   return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: "30d",
+    expiresIn: "30d", 
   });
 };
 

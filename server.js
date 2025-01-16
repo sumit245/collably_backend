@@ -7,13 +7,10 @@ const SocketServer = require("./socketServer");
 const session = require("express-session");
 const passport = require("./middleware/passport");
 const corsOptions = {
-  origin: [
-    "http://localhost:3000", 
-    "https://collably-backend.vercel.app", 
-  ],
+  origin: ["http://127.0.0.1:5000"],
   methods: "GET,POST,PUT,DELETE",
-  credentials: true, 
-  allowedHeaders: ["Content-Type", "Authorization"], 
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 const app = express();
