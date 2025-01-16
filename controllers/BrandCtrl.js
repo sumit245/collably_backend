@@ -1,9 +1,11 @@
-// controllers/brandController.js
-
 const Brand = require("../models/brandModel");
-const path = require("path");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 
-// Create a new brand
+// JWT secret key (make sure to keep this safe in environment variables)
+const JWT_SECRET = "your_jwt_secret_key";
+
+// Create a new brand (with password)
 exports.createBrand = async (req, res) => {
   try {
     const {
@@ -15,6 +17,7 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
+      password, // add password to the request
     } = req.body;
     const brandLogo = req.file ? req.file.path : null; // Assuming logo is uploaded via Multer
 
@@ -28,6 +31,7 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
+      password, // store the password directly
     });
 
     await brand.save();
@@ -36,6 +40,33 @@ exports.createBrand = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error creating brand", error: err.message });
+  }
+};
+
+// Login (authenticate brand)
+exports.login = async (req, res) => {
+  try {
+    const { contactEmail, password } = req.body;
+
+    const brand = await Brand.findOne({ contactEmail });
+    if (!brand) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Check if the password is correct
+    const isMatch = await brand.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Create JWT token
+    const token = jwt.sign({ brandId: brand._id }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.status(200).json({ message: "Login successful", token });
+  } catch (err) {
+    res.status(500).json({ message: "Error logging in", error: err.message });
   }
 };
 
@@ -120,5 +151,20 @@ exports.deleteBrand = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting brand", error: err.message });
+  }
+};
+
+// Protected route to get brand details (requires JWT)
+exports.getBrandDetails = async (req, res) => {
+  try {
+    const brand = await Brand.findById(req.brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+    res.status(200).json(brand);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error fetching brand details", error: err.message });
   }
 };

@@ -1,12 +1,12 @@
-const router = require('express').Router();
-const auth = require('../middleware/auth');
-const userCtrl = require('../controllers/userCtrl');
+const router = require("express").Router();
+const auth = require("../middleware/auth");
+const userCtrl = require("../controllers/userCtrl");
 
-router.get('/search', auth, userCtrl.searchUser);
+router.get("/search", auth, userCtrl.searchUser);
 
-router.get('/user/:id', auth, userCtrl.getUser);
+router.get("/user/:id", auth, userCtrl.getUser);
 
-router.get('/user', userCtrl.getAllUsers)
+router.get("/user", userCtrl.getAllUsers);
 
 router.patch("/user", auth, userCtrl.updateUser);
 

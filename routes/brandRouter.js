@@ -8,23 +8,29 @@ const router = express.Router();
 // Set up Multer for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/logos"); 
+    cb(null, "uploads/logos");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); 
+    cb(null, Date.now() + path.extname(file.originalname));
   },
 });
 
 const upload = multer({ storage });
 
+// Create brand (with logo and password)
 router.post(
   "/createbrand",
   upload.single("brandLogo"),
   brandController.createBrand
-); 
-router.get("/getallbrands", brandController.getAllBrands); 
-router.get("/getbrand/:id", brandController.getBrandById); 
-router.put("/:id", upload.single("brandLogo"), brandController.updateBrand); 
-router.delete("/deletebrand/:id", brandController.deleteBrand); 
+);
+
+// Brand login
+router.post("/brandlogin", brandController.login);
+
+// Other existing routes...
+router.get("/getallbrands", brandController.getAllBrands);
+router.get("/getbrand/:id", brandController.getBrandById);
+router.put("/:id", upload.single("brandLogo"), brandController.updateBrand);
+router.delete("/deletebrand/:id", brandController.deleteBrand);
 
 module.exports = router;
