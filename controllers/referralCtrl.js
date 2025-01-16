@@ -54,6 +54,7 @@ exports.getReferralByName = async (req, res) => {
 };
 
 exports.getAllReferrals = async (req, res) => {
+  // res.json({ "message": "I am hit" })
   try {
     const referrals = await Referral.find();
     res.json(referrals);

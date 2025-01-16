@@ -1,44 +1,38 @@
 const Users = require("../models/userModel");
 const bcrypt = require("bcrypt");
-const jwt = require( "jsonwebtoken" );
+const jwt = require("jsonwebtoken");
 const passport = require("../middleware/passport");
 
 const authCtrl = {
-
-    
-   googleLogin: passport.authenticate("google", {
-     scope: ["profile", "email"],
-   }),
+  googleLogin: passport.authenticate("google", {
+    scope: ["profile", "email"],
+  }),
 
   // Google login callback route
   googleCallback: (req, res) => {
-   
     passport.authenticate("google", {
-      failureRedirect: "/login", 
+      failureRedirect: "/auth/google",
     })(req, res, () => {
-      
-      res.redirect("/profile"); 
+      res.redirect("/profile");
     });
   },
 
+  instagramLogin: passport.authenticate("instagram", {
+    scope: ["user_profile", "user_media"],
+  }),
 
- instagramLogin : passport.authenticate("instagram", {
-  scope: ["user_profile", "user_media"],
-}),
-
-
- instagramCallback : (req, res) => {
-  passport.authenticate("instagram", {
-    failureRedirect: "/login", 
-  })(req, res, () => {
-    res.redirect("/profile"); 
-  });
-},
+  instagramCallback: (req, res) => {
+    passport.authenticate("instagram", {
+      failureRedirect: "/login",
+    })(req, res, () => {
+      res.redirect("/profile");
+    });
+  },
 
   register: async (req, res) => {
     try {
       const { fullname, username, email, password, gender } = req.body;
-    
+
       let newUserName = username.toLowerCase().replace(/ /g, "");
 
       const user_name = await Users.findOne({ username: newUserName });

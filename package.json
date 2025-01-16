@@ -1,9 +1,10 @@
 {
   "name": "mern",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "description": "Collably Backend",
+  "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "dev": "nodemon server.js"
   },
   "keywords": [],

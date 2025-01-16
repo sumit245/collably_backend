@@ -14,15 +14,15 @@ const orderCtrl = {
         return res.status(404).json({ msg: "User not found" });
       }
 
-      // Validate each item (product and quantity)
-      for (let item of items) {
-        const product = await Product.findById(item.product);
-        if (!product) {
-          return res
-            .status(404)
-            .json({ msg: `Product with id ${item.product} not found` });
-        }
-      }
+      // // Validate each item (product and quantity)
+      // for (let item of items) {
+      //   const product = await Product.findById(item.product);
+      //   if (!product) {
+      //     return res
+      //       .status(404)
+      //       .json({ msg: `Product with id ${item.product} not found` });
+      //   }
+      // }
 
       // Create the order
       const newOrder = new Order({
