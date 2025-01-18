@@ -17,7 +17,6 @@ class APIfeatures {
   }
 }
 
-
 const messageCtrl = {
   createMessage: async (req, res) => {
     try {

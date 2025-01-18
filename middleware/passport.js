@@ -1,7 +1,7 @@
 require("dotenv").config();
 const passport = require("passport");
-const GoogleStrategy = require( "passport-google-oauth20" ).Strategy;
-const InstagramStrategy = require( "passport-instagram" ).Strategy;
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const InstagramStrategy = require("passport-instagram").Strategy;
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 
@@ -11,7 +11,7 @@ passport.use(
     {
       clientID: clientID,
       clientSecret: clientSecret,
-      callbackURL: `http://localhost:5000/api/auth/google/callback`,
+      callbackURL: `http://127.0.0.1:5000/api/auth/google/callback`,
     },
     (accessToken, refreshToken, profile, done) => {
       done(null, profile);

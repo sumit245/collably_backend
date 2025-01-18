@@ -7,18 +7,15 @@ const SocketServer = require("./socketServer");
 const session = require("express-session");
 const passport = require("./middleware/passport");
 const corsOptions = {
-  origin: ["http://127.0.0.1:5000"],
-  methods: "GET,POST,PUT,DELETE",
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"],
+  Credential: "true",
+  origin: "*",
 };
 
 const app = express();
 
-app.use(cors(corsOptions));
 app.use(express.json());
 app.options("*", cors(corsOptions));
-// app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(
   session({
@@ -46,10 +43,9 @@ app.use("/api", require("./routes/commentRouter"));
 app.use("/api", require("./routes/adminRouter"));
 app.use("/api", require("./routes/notifyRouter"));
 app.use("/api", require("./routes/messageRouter"));
-app.use("/api", require("./routes/productRouter"));
+// app.use("/api", require("./routes/productRouter"));
 app.use("/api", require("./routes/referralRouter"));
 app.use("/api", require("./routes/orderRouter"));
-app.use("/api", require("./routes/brandRouter"));
 //#endregion
 
 // Passport setup
@@ -71,4 +67,6 @@ mongoose
 const port = process.env.PORT || 5000;
 http.listen(port, () => {
   console.log("Listening on ", port);
-});
+} );
+
+
