@@ -27,10 +27,9 @@ router.post(
   brandController.createBrand
 );
 
-
 router.post("/brandlogin", brandController.login);
 router.get("/brands", brandController.getAllBrands);
-router.get("/:id", brandController.getBrandById);
+router.get("/brand/:id", brandController.getBrandById);
 
 // Update brand by ID
 router.put(
@@ -48,7 +47,7 @@ router.put(
 
 // Delete brand by ID
 router.delete(
-  "/:id",
+  "/brand/:id",
   (req, res, next) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
