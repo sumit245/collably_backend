@@ -43,11 +43,11 @@ const BrandSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true, // Make sure this is required
+    required: true, 
   },
 });
 
-// Hash password before saving to DB
+
 BrandSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(this.password, 10);
@@ -55,7 +55,7 @@ BrandSchema.pre("save", async function (next) {
   next();
 });
 
-// Method to compare passwords
+
 BrandSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
