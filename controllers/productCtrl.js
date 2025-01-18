@@ -17,26 +17,27 @@ exports.getProducts = async (req, res) => {
     const { search, sortBy, filterBy, limit = 10, page = 1 } = req.query;
     const query = {};
 
-
+    // Handle category filter
     if (filterBy) {
-      query.category = filterBy;
+      // If filtering by category, ensure it's valid
+      if (mongoose.Types.ObjectId.isValid(filterBy)) {
+        query.brand = filterBy; // Assume you're filtering by brand ID (ObjectId)
+      } else {
+        query.category = filterBy; // If it's a category string, use the category filter
+      }
     }
 
     let products = Product.find(query);
 
- 
     if (search) {
       products = products.find({ name: { $regex: search, $options: "i" } });
     }
-
 
     if (sortBy) {
       products = products.sort({ [sortBy]: 1 });
     }
 
- 
     products = products.skip((page - 1) * limit).limit(parseInt(limit));
-
     const result = await products;
     res.status(200).json(result);
   } catch (error) {

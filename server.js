@@ -7,7 +7,7 @@ const SocketServer = require("./socketServer");
 const session = require("express-session");
 const passport = require("./middleware/passport");
 const corsOptions = {
-  origin: ["http://127.0.0.1:5000"],
+  origin: ["*"],
   methods: "GET,POST,PUT,DELETE",
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"],

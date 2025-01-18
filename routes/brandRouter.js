@@ -6,10 +6,8 @@ const mongoose = require("mongoose");
 
 const router = express.Router();
 
-// Utility function to check ObjectId validity
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-// Set up Multer for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/logos");
@@ -30,10 +28,10 @@ router.post(
 router.post("/brandlogin", brandController.login);
 router.get("/brands", brandController.getAllBrands);
 router.get("/brand/:id", brandController.getBrandById);
+router.get("/brand/:id", brandController.getBrandById);
 
-// Update brand by ID
 router.put(
-  "/:id",
+  "/brandupdate/:id",
   upload.single("brandLogo"),
   (req, res, next) => {
     const { id } = req.params;
@@ -45,7 +43,6 @@ router.put(
   brandController.updateBrand
 );
 
-// Delete brand by ID
 router.delete(
   "/brand/:id",
   (req, res, next) => {
