@@ -83,6 +83,7 @@ exports.login = async (req, res) => {
 // Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
+    console.log("Request:", req.params); // Add logging here
     const brands = await Brand.find();
     res.status(200).json(brands);
   } catch (err) {
@@ -91,6 +92,7 @@ exports.getAllBrands = async (req, res) => {
       .json({ message: "Error fetching brands", error: err.message });
   }
 };
+
 
 // Get a single brand by ID
 exports.getBrandById = async (req, res) => {

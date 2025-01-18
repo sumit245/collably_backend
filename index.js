@@ -8,6 +8,7 @@ const session = require("express-session");
 const passport = require("./middleware/passport");
 const corsOptions = {
   Credential: "true",
+  origin: "*",
 };
 
 const app = express();
