@@ -1,5 +1,4 @@
 const Users = require("../models/userModel");
-const generateReferralCode = require("../utils/generateReferralCode");
 
 const userCtrl = {
   // Search for users by username
@@ -155,47 +154,6 @@ const userCtrl = {
       });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
-    }
-  },
-
-  // Register a new user with referral link
-  registerUser: async (req, res) => {
-    try {
-      const { fullname, username, email, password, referredBy } = req.body;
-
-      // Generate a 6-digit alphanumeric referral code
-      const referralCode = generateReferralCode();
-
-      // Create new user with referral code and optional referrer (referredBy)
-      const newUser = new Users({
-        fullname,
-        username,
-        email,
-        password, // Make sure to hash the password before saving
-        referralCode,
-        referredBy: referredBy || null, // If referredBy exists, store it
-      });
-
-      // Save the new user
-      await newUser.save();
-
-      // Optionally, update the referred user's data to add this user as a follower
-      if (referredBy) {
-        const referrer = await Users.findById(referredBy);
-        if (referrer) {
-          referrer.followers.push(newUser._id); // Add new user as follower of the referrer
-          await referrer.save();
-        }
-      }
-
-      res.status(201).json({
-        message: "User created successfully",
-        user: newUser,
-        referralLink: `https://yourapp.com/referral/${newUser.referralCode}`, // Provide the referral link
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error creating user" });
     }
   },
 
