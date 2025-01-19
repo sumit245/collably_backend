@@ -3,7 +3,7 @@ const router = express.Router();
 const referralCtrl = require("../controllers/referralCtrl");
 
 // Create referral
-router.post("/referral", referralCtrl.createReferral);
+router.post("/createreferral", referralCtrl.createReferral);
 
 // Search referral by ID
 router.get("/referral/:id", referralCtrl.getReferralById);
