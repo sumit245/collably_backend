@@ -28,7 +28,6 @@ router.post(
 router.post("/brandlogin", brandController.login);
 router.get("/brands", brandController.getAllBrands);
 router.get("/brand/:id", brandController.getBrandById);
-router.get("/brand/:id", brandController.getBrandById);
 
 router.put(
   "/brandupdate/:id",

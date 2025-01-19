@@ -1,7 +1,6 @@
-const Referral = require( "../models/referralModel" );
+const Referral = require("../models/referralModel");
 const Product = require("../models/productModel");
 const generateReferralCode = require("../utils/generateReferralCode");
-
 
 exports.createReferral = async (req, res) => {
   try {
@@ -17,7 +16,7 @@ exports.createReferral = async (req, res) => {
     const referralCode = generateReferralCode(); // e.g., "abx5fg"
 
     // Step 3: Create the referral link
-    const referralLink = `collably${product.name}${referralCode}`;
+    const referralLink = `collably${product.productname}${referralCode}`;
 
     // Step 4: Create the referral object and save it
     const referral = new Referral({
@@ -61,7 +60,7 @@ exports.getReferralByName = async (req, res) => {
   try {
     const referrals = await Referral.find({
       name: new RegExp(req.params.name, "i"),
-    }); 
+    });
 
     if (referrals.length === 0) {
       return res
