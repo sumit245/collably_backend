@@ -20,16 +20,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.post(
-  "/createbrand",
+  "/brands",
   upload.single("brandLogo"),
   brandController.createBrand
 );
 
-router.post("/brandlogin", brandController.login);
-router.get("/brand/:id", brandController.getBrandById);
+router.post("/brands/login", brandController.login);
+router.get("/brands/:id", brandController.getBrandById);
+router.get("/brands", brandController.getAllBrands)
 
 router.put(
-  "/brandupdate/:id",
+  "/brands/:id",
   upload.single("brandLogo"),
   (req, res, next) => {
     const { id } = req.params;
@@ -41,15 +42,13 @@ router.put(
   brandController.updateBrand
 );
 
-router.delete(
-  "/brand/:id",
-  (req, res, next) => {
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ message: "Invalid ObjectId format" });
-    }
-    next();
-  },
+router.delete("/brands/:id", (req, res, next) => {
+  const { id } = req.params;
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: "Invalid ObjectId format" });
+  }
+  next();
+},
   brandController.deleteBrand
 );
 
