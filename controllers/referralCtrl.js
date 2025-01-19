@@ -109,16 +109,15 @@ exports.getAllReferrals = async (req, res) => {
 
 exports.getProductInfoFromReferral = async (req, res) => {
   try {
+    const { productname, referralCode } = req.params; // Get productname and referralCode from URL params
 
-    const { productname, referralCode } = req.params;
-
-
+    // Find the referral using referralCode
     const referral = await Referral.findOne({ referralCode });
     if (!referral) {
       return res.status(404).json({ message: "Referral not found" });
     }
 
-
+    // Fetch product details associated with this referral
     const product = await Product.findById(referral.productId);
     if (
       !product ||
@@ -127,7 +126,7 @@ exports.getProductInfoFromReferral = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-   
+    // Send the product info back in the response
     res.json({
       message: "Product found",
       product: {
@@ -135,7 +134,6 @@ exports.getProductInfoFromReferral = async (req, res) => {
         name: product.productname,
         description: product.description,
         price: product.price,
-       
       },
     });
   } catch (error) {
@@ -143,3 +141,4 @@ exports.getProductInfoFromReferral = async (req, res) => {
     res.status(500).json({ message: "Error fetching product info" });
   }
 };
+
