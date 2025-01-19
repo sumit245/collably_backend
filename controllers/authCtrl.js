@@ -16,8 +16,10 @@ const authCtrl = {
     passport.authenticate("google", {
       failureRedirect: "/login",
     })(req, res, () => {
+      console.log(req)
+      // res.redirect("/profile");
+      // TODO:// Apply logic to save this req body in database
 
-      res.redirect("/profile");
     });
   },
 
