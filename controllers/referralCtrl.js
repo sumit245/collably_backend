@@ -34,7 +34,8 @@ exports.createReferral = async (req, res) => {
     }
 
     // Step 3: Create the referral link
-    const referralLink = `collably${product.productname}${referralCode}`;
+  const referralLink = `https://collab.ly/${product.productname.toLowerCase()}/${referralCode}`;
+
 
     // Step 4: Create the referral object and save it
     const referral = new Referral({
@@ -103,5 +104,42 @@ exports.getAllReferrals = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching all referrals" });
+  }
+};
+
+exports.getProductInfoFromReferral = async (req, res) => {
+  try {
+
+    const { productname, referralCode } = req.params;
+
+
+    const referral = await Referral.findOne({ referralCode });
+    if (!referral) {
+      return res.status(404).json({ message: "Referral not found" });
+    }
+
+
+    const product = await Product.findById(referral.productId);
+    if (
+      !product ||
+      product.productname.toLowerCase() !== productname.toLowerCase()
+    ) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+   
+    res.json({
+      message: "Product found",
+      product: {
+        id: product._id,
+        name: product.productname,
+        description: product.description,
+        price: product.price,
+       
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching product info" });
   }
 };
