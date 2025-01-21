@@ -69,7 +69,12 @@ exports.getProducts = async (req, res) => {
 
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate("brand"); // Populate brand details
+    const product = await Product.findById(req.params.id).populate(
+      "brand",
+      null,
+      null,
+      { strictPopulate: false }
+    ); 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -78,6 +83,7 @@ exports.getProductById = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 exports.updateProduct = async (req, res) => {
   try {

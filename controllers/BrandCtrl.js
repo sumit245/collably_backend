@@ -96,6 +96,7 @@ exports.getAllBrands = async (req, res) => {
 
 // Get a single brand by ID
 exports.getBrandById = async (req, res) => {
+  console.log("Request Params:", req.params); // Log the incoming parameters
   try {
     const brand = await Brand.findById(req.params.id);
     if (!brand) {
@@ -108,6 +109,7 @@ exports.getBrandById = async (req, res) => {
       .json({ message: "Error fetching brand", error: err.message });
   }
 };
+
 
 // Update a brand by ID
 exports.updateBrand = async (req, res) => {

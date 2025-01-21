@@ -17,12 +17,14 @@ const referralSchema = new mongoose.Schema(
       ref: "Brand",
       required: true,
     },
+    referralKey: { type: String, default: 'https://collab.ly' }, 
     referralCode: { type: String, required: true, unique: true },
     referralLink: {
       type: String,
       required: true,
       unique: true,
     },
+    
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

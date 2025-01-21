@@ -34,8 +34,7 @@ exports.createReferral = async (req, res) => {
     }
 
     // Step 3: Create the referral link
-  const referralLink = `https://collab.ly/${product.productname.toLowerCase()}/${referralCode}`;
-
+    const referralLink = `https://collab.ly/${product.productname.toLowerCase()}/${referralCode}`;
 
     // Step 4: Create the referral object and save it
     const referral = new Referral({
@@ -107,27 +106,35 @@ exports.getAllReferrals = async (req, res) => {
   }
 };
 
+// Referral Controller
 exports.getProductInfoFromReferral = async (req, res) => {
+  const { productname, referralCode } = req.params;
+
+  console.log("Entering referral logic...");
+  console.log("Received referralCode:", referralCode);
+  console.log("Received productname:", productname);
+
   try {
-
-    const { productname, referralCode } = req.params;
-
-
+    // Step 1: Find the referral by referralCode
     const referral = await Referral.findOne({ referralCode });
     if (!referral) {
-      return res.status(404).json({ message: "Referral not found" });
+      return res.status(404).json({ message: `Referral not found for code: ${referralCode}` });
     }
+    console.log("Referral found:", referral);
 
-
+    // Step 2: Find the product associated with the referral
     const product = await Product.findById(referral.productId);
-    if (
-      !product ||
-      product.productname.toLowerCase() !== productname.toLowerCase()
-    ) {
-      return res.status(404).json({ message: "Product not found" });
+    if (!product) {
+      return res.status(404).json({ message: `Product not found for referral` });
+    }
+    console.log("Product found:", product);
+
+    // Step 3: Compare product names (case insensitive)
+    if (product.productname.toLowerCase() !== productname.toLowerCase()) {
+      return res.status(404).json({ message: `Product name mismatch: Expected '${productname}', but got '${product.productname}'` });
     }
 
-   
+    // Step 4: Return product info if everything matches
     res.json({
       message: "Product found",
       product: {
@@ -135,11 +142,13 @@ exports.getProductInfoFromReferral = async (req, res) => {
         name: product.productname,
         description: product.description,
         price: product.price,
-       
       },
     });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching product info" });
+    console.error("Error in referral logic:", error);
+    res.status(500).json({ message: "Error fetching product info", error: error.message });
   }
 };
+
+
