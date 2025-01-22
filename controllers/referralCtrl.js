@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Referral = require("../models/referralModel");
 const Product = require("../models/productModel");
+const Users = require("../models/userModel");
 const generateReferralCode = require("../utils/generateReferralCode");
 
 exports.createReferral = async (req, res) => {
@@ -42,7 +43,9 @@ exports.createReferral = async (req, res) => {
       productId,
       brandId,
       referralCode,
-      referralLink, // Store the generated referral link
+      referralLink,
+      iscount,
+      expiresAt,
     });
 
     console.log("Referral to be saved:", referral);
@@ -106,49 +109,58 @@ exports.getAllReferrals = async (req, res) => {
   }
 };
 
-// Referral Controller
-exports.getProductInfoFromReferral = async (req, res) => {
-  const { productname, referralCode } = req.params;
-
-  console.log("Entering referral logic...");
-  console.log("Received referralCode:", referralCode);
-  console.log("Received productname:", productname);
-
+exports.getReferralByCode = async (req, res) => {
   try {
-    // Step 1: Find the referral by referralCode
-    const referral = await Referral.findOne({ referralCode });
+    const { code } = req.params;
+
+    // Find referral by code
+    const referral = await Referral.findOne({ referralCode: code });
     if (!referral) {
-      return res.status(404).json({ message: `Referral not found for code: ${referralCode}` });
-    }
-    console.log("Referral found:", referral);
-
-    // Step 2: Find the product associated with the referral
-    const product = await Product.findById(referral.productId);
-    if (!product) {
-      return res.status(404).json({ message: `Product not found for referral` });
-    }
-    console.log("Product found:", product);
-
-    // Step 3: Compare product names (case insensitive)
-    if (product.productname.toLowerCase() !== productname.toLowerCase()) {
-      return res.status(404).json({ message: `Product name mismatch: Expected '${productname}', but got '${product.productname}'` });
+      return res.status(404).json({ msg: "Referral not found" });
     }
 
-    // Step 4: Return product info if everything matches
-    res.json({
-      message: "Product found",
-      product: {
-        id: product._id,
-        name: product.productname,
-        description: product.description,
-        price: product.price,
-      },
+    // Increment the clicks field by 1
+    referral.clicks += 1;
+    await referral.save();
+
+    // Fetch the referred product and the user who created the referral
+    const { productId, userId } = referral;
+    const referredProduct = await Product.findById(productId, {
+      productname: 1,
+      description: 1,
+      price: 1,
+      category: 1,
     });
+    const { productname, description, category, price } = referredProduct; //Object destructuring
+    const productID = referredProduct._id;
 
-  } catch (error) {
-    console.error("Error in referral logic:", error);
-    res.status(500).json({ message: "Error fetching product info", error: error.message });
+    const referredBy = await Users.findById(userId, {
+      fullname: 1,
+      username: 1,
+    });
+    const { fullname, username } = referredBy;
+    const userID = referredBy._id;
+    if (referredProduct) {
+      // Return the updated referral data
+      res.status(200).json({
+        productname,
+        description,
+        category,
+        price,
+        productID,
+        fullname,
+        username,
+        userID,
+
+        clicks: referral.clicks, // Send the updated click count
+      });
+    } else {
+      res.status(404).json({
+        msg: "No product linked with this referral",
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
   }
 };
-
-

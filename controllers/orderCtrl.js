@@ -103,7 +103,7 @@ const orderCtrl = {
     try {
       const orders = await Order.find()
         .populate("user")
-        .populate("items.product");
+        .populate("items.product"); 
       res.json({ orders });
     } catch (err) {
       console.error(err);
