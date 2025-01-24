@@ -103,11 +103,20 @@ const orderCtrl = {
     try {
       const orders = await Order.find()
         .populate("user")
-        .populate("items.product"); 
+        .populate("items.product");
       res.json({ orders });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: "Error fetching orders" });
+    }
+  },
+
+  getAllByPassedOrders: async (req, res) => {
+    try {
+      const orders = await Order.find();
+      res.json({ orders });
+    } catch (err) {
+      console.error(err);
     }
   },
 
