@@ -44,8 +44,8 @@ exports.createReferral = async (req, res) => {
       brandId,
       referralCode,
       referralLink,
-      iscount,
-      expiresAt,
+      iscount: 0,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
 
     console.log("Referral to be saved:", referral);
