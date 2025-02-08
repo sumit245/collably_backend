@@ -1,49 +1,64 @@
 const Posts = require("../models/postModel");
 const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
+const { uploadVideo, uploadImages } = require("../middleware/uploadMiddleware");
 
-class APIfeatures {
-  constructor(query, queryString) {
-    this.query = query;
-    this.queryString = queryString;
-  }
-
-  paginating() {
-    const page = this.queryString.page * 1 || 1;
-    const limit = this.queryString.limit * 1 || 9;
-    const skip = (page - 1) * limit;
-    this.query = this.query.skip(skip).limit(limit);
-    return this;
-  }
-}
 
 const postCtrl = {
-  createPost: async (req, res) => {
+ createPost: async (req, res) => {
     try {
-      const { content, images } = req.body;
+      console.log("Received body:", req.body);
+      console.log("Received files:", req.files);
+      console.log("Received file:", req.file);
 
-      if (images.length === 0) {
-        return res.status(400).json({ msg: "Please add photo(s)" });
-      }
-
-      const newPost = new Posts({
-        content,
-        images,
-        user: req.user._id,
-      });
-      await newPost.save();
-
-      res.json({
-        msg: "Post created successfully.",
-        newPost: {
-          ...newPost._doc,
-          user: req.user
+      // Upload images first
+      uploadImages(req, res, (err) => {
+        if (err) {
+          console.log("Error during image upload:", err.message);
+          return res.status(400).json({ msg: err.message });
         }
+
+        // Then upload video (if exists)
+        uploadVideo(req, res, async (err) => {
+          if (err) {
+            console.log("Error during video upload:", err.message);
+            return res.status(400).json({ msg: err.message });
+          }
+
+          const { content } = req.body;
+          const images = req.files ? req.files.map((file) => file.path) : [];  // Handle multiple image files
+          const video = req.file ? req.file.path : null;  // Handle single video file
+
+          // Ensure at least one image or video is provided
+          if (images.length === 0 && !video) {
+            return res.status(400).json({ msg: 'Please add photo(s) or a video.' });
+          }
+
+          // Create a new post
+          const newPost = new Posts({
+            content,
+            images,
+            user: req.user._id,
+            video,
+          });
+
+          await newPost.save();
+
+          res.json({
+            msg: 'Post created successfully.',
+            newPost: {
+              ...newPost._doc,
+              user: req.user,
+            },
+          });
+        });
       });
     } catch (err) {
+      console.log("Error in createPost:", err);
       return res.status(500).json({ msg: err.message });
     }
   },
+
 
   getPosts: async (req, res) => {
     try {
@@ -53,13 +68,14 @@ const postCtrl = {
         }),
         req.query
       ).paginating();
+
       const posts = await features.query
         .sort("-createdAt")
         .populate("user likes", "avatar username fullname followers")
         .populate({
           path: "comments",
           populate: {
-            path: "user likes ",
+            path: "user likes",
             select: "-password",
           },
         });
@@ -83,13 +99,14 @@ const postCtrl = {
         {
           content,
           images,
-        }
+        },
+        { new: true }
       )
         .populate("user likes", "avatar username fullname")
         .populate({
           path: "comments",
           populate: {
-            path: "user likes ",
+            path: "user likes",
             select: "-password",
           },
         });
@@ -185,7 +202,7 @@ const postCtrl = {
         .populate({
           path: "comments",
           populate: {
-            path: "user likes ",
+            path: "user likes",
             select: "-password",
           },
         });
@@ -234,8 +251,8 @@ const postCtrl = {
         msg: "Post deleted successfully.",
         newPost: {
           ...post,
-          user: req.user
-        }
+          user: req.user,
+        },
       });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
@@ -330,15 +347,17 @@ const postCtrl = {
 
   getSavePost: async (req, res) => {
     try {
-      const features = new APIfeatures(Posts.find({ _id: { $in: req.user.saved } }), req.query).paginating();
+      const features = new APIfeatures(
+        Posts.find({ _id: { $in: req.user.saved } }),
+        req.query
+      ).paginating();
 
       const savePosts = await features.query.sort("-createdAt");
 
       res.json({
         savePosts,
-        result: savePosts.length
-      })
-
+        result: savePosts.length,
+      });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
