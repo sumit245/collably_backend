@@ -40,7 +40,7 @@ exports.createReferral = async (req, res) => {
     // Step 4: Create the referral object and save it
     const referral = new Referral({
       userId,
-      productId,
+      productId,  
       brandId,
       referralCode,
       referralLink,
