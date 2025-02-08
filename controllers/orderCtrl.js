@@ -1,7 +1,8 @@
 const Order = require("../models/orderModel");
 const User = require("../models/userModel");
 const Product = require( "../models/productModel" );
-const Brand = require( "../models/BrandModel" );
+// const Brand = require( "../models/BrandModel" );
+const Brand = require("../models/BrandModel");
 
 const orderCtrl = {
   // Create a new order
