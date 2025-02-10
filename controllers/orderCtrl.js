@@ -15,10 +15,28 @@ const orderCtrl = {
         return res.status(404).json({ msg: "User not found" });
       }
 
+      // Process the items and ensure brandId is added
+      const updatedItems = [];
+      for (let i = 0; i < items.length; i++) {
+        const product = await Product.findById(items[i].product); // Get the product from DB
+        if (!product) {
+          return res
+            .status(404)
+            .json({ msg: `Product with id ${items[i].product} not found` });
+        }
+
+        // Attach the brandId to the order item
+        updatedItems.push({
+          product: product._id,
+          quantity: items[i].quantity,
+          price: items[i].price,
+        });
+      }
+
       // Create the order
       const newOrder = new Order({
         user: req.user._id,
-        items,
+        items: updatedItems,
         shippingAddress,
         totalAmount,
         paymentStatus,
@@ -26,38 +44,51 @@ const orderCtrl = {
 
       await newOrder.save();
 
+      // Fetch the newly created order and populate the 'product' field in the items
+      const populatedOrder = await Order.findById(newOrder._id)
+        .populate("items.product") // Populate the product details
+        .exec();
+
+      // Now that 'product' is populated, we can also access brandId from it
+      populatedOrder.items.forEach((item) => {
+        item.product.brandId = item.product.brandId; // Ensure brandId is included
+      });
+
       res
         .status(201)
-        .json({ msg: "Order created successfully", order: newOrder });
+        .json({ msg: "Order created successfully", order: populatedOrder });
     } catch (err) {
       console.error(err);
       res.status(500).json({ msg: "Error creating order" });
     }
   },
 
+  // Get orders by product's brand
+  getBrandOrders: async (req, res) => {
+    try {
+      // Fetch all orders and populate the product details inside items
+      const allorders = await Order.find().populate("items.product");
 
-    // Get orders by product's brand
- getBrandOrders: async (req, res) => {
-  try {
-    // Fetch all orders and populate product details
-    const allorders = await Order.find().populate("items.product");
+      // Filter orders where the brandId of the product matches the req.params.id
+      const myorders = allorders.filter((order) =>
+        order.items.some(
+          (item) => item.product.brandId.toString() === req.params.id
+        )
+      );
 
-    // Filter orders based on the brandId
-    const myorders = allorders.filter(order => {
-      // Check if any item in the order belongs to the given brand
-      return order.items.some(item => item.product.brandId.toString() === req.params.id);
-    });
-
-    if (myorders.length > 0) {
-      return res.json(myorders);  
-    } else {
-      return res.status(404).json({ message: 'No orders found for this brand' });
+      // If matching orders are found, return them
+      if (myorders.length > 0) {
+        return res.json(myorders);
+      } else {
+        return res
+          .status(404)
+          .json({ message: "No orders found for this brand" });
+      }
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server Error", error: err });
     }
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Server Error', error: err });
-  }
-},
+  },
 
   // Get all orders for a specific user
   getUserOrders: async (req, res) => {
