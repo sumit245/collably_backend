@@ -121,6 +121,7 @@ const authCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  
 
   // Change password route
   changePassword: async (req, res) => {

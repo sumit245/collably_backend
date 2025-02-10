@@ -8,6 +8,10 @@ const postSchema = new Schema(
       type: Array,
       required: true,
     },
+    video: {
+      type: String, 
+      default: null, 
+    },
     likes: [
       {
         type: mongoose.Types.ObjectId,
