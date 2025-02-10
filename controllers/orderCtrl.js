@@ -20,7 +20,9 @@ const orderCtrl = {
       for (let i = 0; i < items.length; i++) {
         const product = await Product.findById(items[i].product); // Get the product from DB
         if (!product) {
-          return res.status(404).json({ msg: `Product with id ${items[i].product} not found` });
+          return res
+            .status(404)
+            .json({ msg: `Product with id ${items[i].product} not found` });
         }
 
         // Attach the brandId to the order item
@@ -44,11 +46,11 @@ const orderCtrl = {
 
       // Fetch the newly created order and populate the 'product' field in the items
       const populatedOrder = await Order.findById(newOrder._id)
-        .populate('items.product') // Populate the product details
+        .populate("items.product") // Populate the product details
         .exec();
 
       // Now that 'product' is populated, we can also access brandId from it
-      populatedOrder.items.forEach(item => {
+      populatedOrder.items.forEach((item) => {
         item.product.brandId = item.product.brandId; // Ensure brandId is included
       });
 
@@ -61,41 +63,53 @@ const orderCtrl = {
     }
   },
 
-
   // Get orders by product's brand
-getBrandOrders: async (req, res) => {
+  getBrandOrders: async (req, res) => {
     try {
-        // Fetch all orders with product populated
-        const orders = await Order.find()
-            .populate({
-                path: 'items.product',
-                select: 'brandId productname price',  // Only fetch brandId and other relevant fields
-            });
+      // Fetch all orders with product populated and user populated for fullname
+      const orders = await Order.find()
+        .populate({
+          path: "items.product",
+          select: "brandId productname price",
+        })
+        .populate({
+          path: "user", // Populate the user field to get fullname
+          select: "fullname", // Fetch the fullname from the User model
+        });
 
-        console.log("Fetched Orders: ", orders);  // Check the orders data
+      console.log("Fetched Orders: ", orders); // Check the orders data
 
-        // Filter orders where the product's brandId matches the brandId passed in the URL
-       const filteredOrders = orders.filter((order) =>
-         order.items.some(
-           (item) =>
-             item.product &&
-             item.product.brandId &&
-             item.product.brandId.toString() === req.params.brandId
-         )
-       );
+      // Filter orders where the product's brandId matches the brandId passed in the URL
+      const filteredOrders = orders.filter((order) =>
+        order.items.some(
+          (item) =>
+            item.product &&
+            item.product.brandId &&
+            item.product.brandId.toString() === req.params.brandId
+        )
+      );
 
-        if (filteredOrders.length > 0) {
-            console.log("Filtered Orders: ", filteredOrders);  // Check the filtered data
-            return res.json(filteredOrders);
-        } else {
-            return res.status(404).json({ message: "No orders found for this brand" });
-        }
+      if (filteredOrders.length > 0) {
+        // Map filtered orders to include the fullname
+        const result = filteredOrders.map((order) => ({
+          ...order.toObject(),
+          fullname: order.user.fullname, // Add the fullname field from populated user data
+        }));
+
+        console.log("Filtered Orders with Fullnames: ", result); // Check the filtered data with fullnames
+        return res.json(result);
+      } else {
+        return res
+          .status(404)
+          .json({ message: "No orders found for this brand" });
+      }
     } catch (err) {
-        console.error("Error: ", err);
-        return res.status(500).json({ message: "Error fetching orders", error: err.message });
+      console.error("Error: ", err);
+      return res
+        .status(500)
+        .json({ message: "Error fetching orders", error: err.message });
     }
-},
-
+  },
 
   // Get all orders for a specific user
   getUserOrders: async (req, res) => {
