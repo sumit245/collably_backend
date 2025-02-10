@@ -37,40 +37,11 @@ const orderCtrl = {
 
   // Get orders by product's brand
   getBrandOrders: async (req, res) => {
-    try {
-      const brandId = req.params.brandId;
-
-      // Log the brandId for debugging
-      console.log("Brand ID received:", brandId);
-
-      const orders = await Order.find().populate({
-        path: "items.product", // Populate product in items
-        match: { brand: brandId }, // Ensure only products from the specific brand are included
-        populate: { path: "brand", select: "name" }, // Populate brand
-      });
-
-      // Log orders for debugging
-      console.log("Fetched Orders:", orders);
-
-      // Filter orders for that brand
-      const brandOrders = orders.filter((order) =>
-        order.items.some(
-          (item) =>
-            item.product &&
-            item.product.brand &&
-            item.product.brand._id.toString() === brandId
-        )
-      );
-
-      if (!brandOrders.length) {
-        return res.status(404).json({ msg: "No orders found for this brand." });
-      }
-
-      res.json({ orders: brandOrders });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: "Error fetching orders for brand" });
-    }
+    const allorders = await Order.find();
+    const myorders = allorders.filter(
+      (orders) => orders.Product.brandID === req.params.id
+    );
+    if (myorders) return res.json;
   },
 
   // Get all orders for a specific user
