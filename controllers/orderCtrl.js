@@ -34,14 +34,23 @@ const orderCtrl = {
       res.status(500).json({ msg: "Error creating order" });
     }
   },
-
   // Get orders by product's brand
   getBrandOrders: async (req, res) => {
-    const allorders = await Order.find();
-    const myorders = allorders.filter(
-      (orders) => orders.Product.brandID === req.params.id
-    );
-    if (myorders) return res.json;
+    try {
+      const allOrders = await Order.find();
+      const myOrders = allOrders.filter(
+        (Order) => Order.Product.brandID === req.params.id
+      );
+      if (myOrders.length > 0) {
+        return res.json(myOrders);
+      } else {
+        return res
+          .status(404)
+          .json({ message: "No orders found for this brand" });
+      }
+    } catch (err) {
+      return res.status(500).json({ message: "Server Error", error: err });
+    }
   },
 
   // Get all orders for a specific user

@@ -67,7 +67,6 @@ exports.getProducts = async (req, res) => {
   }
 };
 
-// Get products by brand 
 exports.getBrandProducts = async (req, res) => {
   try {
     const { brandId } = req.query;
@@ -83,8 +82,6 @@ exports.getBrandProducts = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
-
 
 exports.getProductById = async (req, res) => {
   try {
@@ -102,7 +99,6 @@ exports.getProductById = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 
 exports.updateProduct = async (req, res) => {
   try {
