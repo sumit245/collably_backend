@@ -1,7 +1,6 @@
 const Order = require("../models/orderModel");
 const User = require("../models/userModel");
 const Product = require( "../models/productModel" );
-// const Brand = require( "../models/BrandModel" );
 const Brand = require("../models/BrandModel");
 
 const orderCtrl = {
@@ -35,33 +34,20 @@ const orderCtrl = {
       res.status(500).json({ msg: "Error creating order" });
     }
   },
-
     // Get orders by product's brand
-  getBrandOrders: async (req, res) => {
-    try {
-      const brandId = req.params.brandId; 
-      const orders = await Order.find()
-        .populate({
-          path: "items.product", 
-          match: { brand: brandId },
-          populate: { path: "brand", select: "name" },
-        });
-
-      // Filter orders for that brand
-      const brandOrders = orders.filter(order => 
-        order.items.some(item => item.product && item.product.brand && item.product.brand._id.toString() === brandId)
-      );
-
-      if (!brandOrders.length) {
-        return res.status(404).json({ msg: "No orders found for this brand." });
+ getBrandOrders: async (req, res) => {
+   try {
+      const allorders = await Order.find();
+      const myorders = allorders.filter((order) => order.Product.brandID === req.params.id);
+      if (myorders.length > 0) {
+         return res.json(myorders);  
+      } else {
+         return res.status(404).json({ message: 'No orders found for this brand' });
       }
-
-      res.json({ orders: brandOrders });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: "Error fetching orders for brand" });
-    }
-  },
+   } catch (err) {
+      return res.status(500).json({ message: 'Server Error', error: err });
+   }
+},
 
   // Get all orders for a specific user
   getUserOrders: async (req, res) => {
