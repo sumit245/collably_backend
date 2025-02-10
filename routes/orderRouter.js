@@ -1,6 +1,7 @@
 // routes/orderRouter.js
 const router = require("express").Router();
-const auth = require("../middleware/auth");
+const auth = require( "../middleware/auth" );
+const brandauth = require("../middleware/brandauth");
 const orderCtrl = require("../controllers/orderCtrl");
 
 router.post("/order", auth, orderCtrl.createOrder);
@@ -11,7 +12,11 @@ router.get("/order/:id", auth, orderCtrl.getOrderById);
 
 router.patch("/order/:id/status", auth, orderCtrl.updateOrderStatus);
 
-router.get("/brand/:brandId/orders",orderCtrl.getBrandOrders); 
+router.get(
+  "/brand/:brandId/orders",
+  orderCtrl.getBrandOrders
+);
+
 
 router.get("/getall/orders", auth, orderCtrl.getAllOrders);
 
