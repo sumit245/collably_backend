@@ -75,9 +75,14 @@ getBrandOrders: async (req, res) => {
         console.log("Fetched Orders: ", orders);  // Check the orders data
 
         // Filter orders where the product's brandId matches the brandId passed in the URL
-        const filteredOrders = orders.filter(order =>
-            order.items.some(item => item.product.brandId.toString() === req.params.brandId)
-        );
+       const filteredOrders = orders.filter((order) =>
+         order.items.some(
+           (item) =>
+             item.product &&
+             item.product.brandId &&
+             item.product.brandId.toString() === req.params.brandId
+         )
+       );
 
         if (filteredOrders.length > 0) {
             console.log("Filtered Orders: ", filteredOrders);  // Check the filtered data
