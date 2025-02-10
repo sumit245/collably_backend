@@ -34,21 +34,30 @@ const orderCtrl = {
       res.status(500).json({ msg: "Error creating order" });
     }
   },
+
   // Get orders by product's brand
   getBrandOrders: async (req, res) => {
     try {
-      const allOrders = await Order.find();
-      const myOrders = allOrders.filter(
-        (Order) => Order.Product.brandID === req.params.id
-      );
-      if (myOrders.length > 0) {
-        return res.json(myOrders);
+      // Fetch all orders and populate product details
+      const allorders = await Order.find().populate("items.product");
+
+      // Filter orders based on the brandId
+      const myorders = allorders.filter((order) => {
+        // Check if any item in the order belongs to the given brand
+        return order.items.some(
+          (item) => item.product.brandId.toString() === req.params.id
+        );
+      });
+
+      if (myorders.length > 0) {
+        return res.json(myorders);
       } else {
         return res
           .status(404)
           .json({ message: "No orders found for this brand" });
       }
     } catch (err) {
+      console.error(err);
       return res.status(500).json({ message: "Server Error", error: err });
     }
   },
