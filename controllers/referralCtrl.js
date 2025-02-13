@@ -112,21 +112,33 @@ exports.createReferral = async (req, res) => {
   }
 };
 
-
-exports.getReferralById = async (req, res) => {
+exports.getReferralsByUserId = async (req, res) => {
   try {
-    const referral = await Referral.findById(req.params.id);
+    const { id } = req.params; 
 
-    if (!referral) {
-      return res.status(404).json({ message: "Referral not found" });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid userId" });
     }
 
-    res.json(referral);
+    const referrals = await Referral.find({
+      userId: new mongoose.Types.ObjectId(id),
+    });
+
+    if (referrals.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No referrals found for this user" });
+    }
+
+    res.status(200).json(referrals);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching referral" });
+    console.error("Error fetching referrals:", error);
+    res.status(500).json({ message: "Error fetching referrals for the user" });
   }
 };
+
+
+
 
 exports.getReferralByName = async (req, res) => {
   try {

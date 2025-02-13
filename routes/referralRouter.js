@@ -7,7 +7,7 @@ const Users = require("../models/userModel");
 
 router.post("/createreferral", referralCtrl.createReferral);
 
-router.get("/referral/:id", referralCtrl.getReferralById);
+router.get("/referral/:id", referralCtrl.getReferralsByUserId);
 
 router.get("/referral/name/:name", referralCtrl.getReferralByName);
 

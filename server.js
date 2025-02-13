@@ -7,11 +7,10 @@ const SocketServer = require("./socketServer");
 const session = require("express-session");
 const passport = require("./middleware/passport");
 const corsOptions = {
-  origin: ["*"],
-  methods: "GET,POST,PUT,DELETE",
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"],
+  Credential: "true",
+  origin: "*",
 };
+
 
 const app = express();
 
