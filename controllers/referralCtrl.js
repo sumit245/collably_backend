@@ -66,30 +66,38 @@ const generateReferralCode = require("../utils/generateReferralCode");
 
 exports.createReferral = async (req, res) => {
   try {
-    const { userId, productUrl } = req.body; 
+    const { userId, productUrl } = req.body;
 
-
+    // Validate the userId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid userId" });
     }
 
-    
-    let urlParts = productUrl.split("?")[0];
-    let path = urlParts.substring(urlParts.indexOf("https://") + 8); 
+    // Query the Users collection to get the username (Use 'Users' instead of 'User')
+    const user = await Users.findById(userId); // Corrected here
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-  
+    const username = user.username; // Assuming 'username' is the field in your User model
+
+    let urlParts = productUrl.split("?")[0];
+    let path = urlParts.substring(urlParts.indexOf("https://") + 8);
+
     const referralCode = generateReferralCode();
 
-  
+    // Check if the referral code already exists
     const existingReferral = await Referral.findOne({ referralCode });
     if (existingReferral) {
       return res.status(400).json({ message: "Referral code already exists" });
     }
 
-    const referralLink = `collably//${path}//${referralCode}`; 
+    const referralLink = `collably//${path}//${referralCode}`;
 
+    // Create the new referral
     const referral = new Referral({
       userId,
+      username, // Include the username here
       referralCode,
       referralLink,
       iscount: 0,
@@ -100,17 +108,20 @@ exports.createReferral = async (req, res) => {
 
     await referral.save();
 
-    
+    // Return the response with the referral and username
     res.status(201).json({
       message: "Referral created successfully",
       referral,
       referralLink,
+      username, // Return the username in the response
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creating referral" });
   }
 };
+
+
 
 exports.getReferralsByUserId = async (req, res) => {
   try {
