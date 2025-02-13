@@ -5,60 +5,67 @@ const { uploadVideo, uploadImages } = require("../middleware/uploadMiddleware");
 
 
 const postCtrl = {
- createPost: async (req, res) => {
+  createPost: async (req, res) => {
     try {
       console.log("Received body:", req.body);
-      console.log("Received files:", req.files);
-      console.log("Received file:", req.file);
+      console.log("Received files:", req.files);  // This should contain images array
+      console.log("Received file:", req.file);    // This should contain video file
 
       // Upload images first
-      uploadImages(req, res, (err) => {
-        if (err) {
-          console.log("Error during image upload:", err.message);
-          return res.status(400).json({ msg: err.message });
-        }
-
-        // Then upload video (if exists)
-        uploadVideo(req, res, async (err) => {
+      const uploadImagesPromise = new Promise((resolve, reject) => {
+        uploadImages(req, res, (err) => {
           if (err) {
-            console.log("Error during video upload:", err.message);
-            return res.status(400).json({ msg: err.message });
+            reject("Error during image upload: " + err.message);
+          } else {
+            resolve();
           }
-
-          const { content } = req.body;
-          const images = req.files ? req.files.map((file) => file.path) : [];  // Handle multiple image files
-          const video = req.file ? req.file.path : null;  // Handle single video file
-
-          // Ensure at least one image or video is provided
-          if (images.length === 0 && !video) {
-            return res.status(400).json({ msg: 'Please add photo(s) or a video.' });
-          }
-
-          // Create a new post
-          const newPost = new Posts({
-            content,
-            images,
-            user: req.user._id,
-            video,
-          });
-
-          await newPost.save();
-
-          res.json({
-            msg: 'Post created successfully.',
-            newPost: {
-              ...newPost._doc,
-              user: req.user,
-            },
-          });
         });
+      });
+
+      // Then upload video (if exists)
+      const uploadVideoPromise = new Promise((resolve, reject) => {
+        uploadVideo(req, res, (err) => {
+          if (err) {
+            reject("Error during video upload: " + err.message);
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      await Promise.all([uploadImagesPromise, uploadVideoPromise]);
+
+      const { content } = req.body;
+      const images = req.files ? req.files.map((file) => file.path) : [];  // Handle multiple image files
+      const video = req.file ? req.file.path : null;  // Handle single video file
+
+      // Ensure at least one image or video is provided
+      if (images.length === 0 && !video) {
+        return res.status(400).json({ msg: 'Please add photo(s) or a video.' });
+      }
+
+      // Create a new post
+      const newPost = new Posts({
+        content,
+        images,
+        user: req.user._id,
+        video,
+      });
+
+      await newPost.save();
+
+      res.json({
+        msg: 'Post created successfully.',
+        newPost: {
+          ...newPost._doc,
+          user: req.user,
+        },
       });
     } catch (err) {
       console.log("Error in createPost:", err);
       return res.status(500).json({ msg: err.message });
     }
   },
-
 
   getPosts: async (req, res) => {
     try {

@@ -148,9 +148,6 @@ exports.getReferralsByUserId = async (req, res) => {
   }
 };
 
-
-
-
 exports.getReferralByName = async (req, res) => {
   try {
     const referrals = await Referral.find({
@@ -171,15 +168,25 @@ exports.getReferralByName = async (req, res) => {
 };
 
 exports.getAllReferrals = async (req, res) => {
-  // res.json({ "message": "I am hit" })
   try {
-    const referrals = await Referral.find();
-    res.json(referrals);
+    // Fetch all referrals and populate the 'userId' field with the username from the User model
+    const referrals = await Referral.find()
+      .populate("userId", "username") // Populating the 'userId' field with 'username'
+      .exec(); // Execute the query
+
+    if (referrals.length === 0) {
+      return res.status(404).json({ message: "No referrals found" });
+    }
+
+    // Return the populated referrals with the username included
+    res.status(200).json(referrals);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching all referrals" });
   }
 };
+
+
 
 exports.getReferralByCode = async (req, res) => {
   try {
