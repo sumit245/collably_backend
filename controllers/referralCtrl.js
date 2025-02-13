@@ -169,9 +169,9 @@ exports.getReferralByName = async (req, res) => {
 
 exports.getAllReferrals = async (req, res) => {
   try {
-    // Fetch all referrals and populate the 'userId' field with the username from the User model
+  
     const referrals = await Referral.find()
-      .populate("userId", "username") // Populating the 'userId' field with 'username'
+      .populate("userId", "username") 
       .exec(); // Execute the query
 
     if (referrals.length === 0) {
