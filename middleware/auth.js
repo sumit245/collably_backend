@@ -19,6 +19,8 @@ const auth = async (req, res, next) => {
         const user = await Users.findOne({ _id: decoded.id });
 
         req.user = user;
+
+        // Create anothermiddleware for brand auth
         next();
     } catch (err) {
         return res.status(500).json({ msg: err.message });

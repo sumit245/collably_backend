@@ -1,8 +1,6 @@
 const Brand = require("../models/brandModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-
-
 const JWT_SECRET = "your_jwt_secret_key";
 
 
@@ -17,9 +15,9 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password,
+      password, 
     } = req.body;
-    const brandLogo = req.file ? req.file.path : null;
+    const brandLogo = req.file ? req.file.path : null; 
 
 
     const existingBrand = await Brand.findOne({ contactEmail });
@@ -40,7 +38,7 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password,
+      password, 
     });
 
 
@@ -74,15 +72,33 @@ exports.login = async (req, res) => {
       expiresIn: "1h",
     });
 
-    res.status(200).json({ message: "Login successful", token });
+    // Return token and brand data
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      brand: {
+        brandId: brand._id,
+        brandName: brand.brandName,
+        brandDescription: brand.brandDescription,
+        brandCategory: brand.brandCategory,
+        contactEmail: brand.contactEmail,
+        brandWebsite: brand.brandWebsite,
+        brandPhoneNumber: brand.brandPhoneNumber,
+        socialMediaLinks: brand.socialMediaLinks,
+        gstNumber: brand.gstNumber,
+        brandLogo: brand.brandLogo,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: "Error logging in", error: err.message });
   }
 };
 
+
 // Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
+    console.log("Request:", req.params); // Add logging here
     const brands = await Brand.find();
     res.status(200).json(brands);
   } catch (err) {
@@ -95,6 +111,7 @@ exports.getAllBrands = async (req, res) => {
 
 // Get a single brand by ID
 exports.getBrandById = async (req, res) => {
+  console.log("Request Params:", req.params); // Log the incoming parameters
   try {
     const brand = await Brand.findById(req.params.id);
     if (!brand) {
@@ -107,6 +124,7 @@ exports.getBrandById = async (req, res) => {
       .json({ message: "Error fetching brand", error: err.message });
   }
 };
+
 
 // Update a brand by ID
 exports.updateBrand = async (req, res) => {

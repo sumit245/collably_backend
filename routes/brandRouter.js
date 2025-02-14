@@ -25,9 +25,12 @@ router.post(
   brandController.createBrand
 );
 
-router.post("/brands/login", brandController.login);
-router.get("/brands/:id", brandController.getBrandById);
-router.get("/brands", brandController.getAllBrands)
+
+router.post( "/brandlogin", brandController.login );
+router.get("/brands", brandController.getAllBrands);
+
+router.get("/brand/:id", brandController.getBrandById);
+
 
 router.put(
   "/brands/:id",
