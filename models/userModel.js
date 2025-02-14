@@ -6,22 +6,19 @@ const userSchema = new Schema(
   {
     fullname: {
       type: String,
-      required: true,
       trim: true,
       maxlength: 25,
     },
     username: {
       type: String,
-      required: true,
       trim: true,
       maxlength: 25,
       unique: true,
     },
     email: {
       type: String,
-      required: true,
       trim: true,
-      unique: true,
+      // unique: true,
     },
     password: {
       type: String,
@@ -48,7 +45,7 @@ const userSchema = new Schema(
       type: String,
       default: "male",
     },
-    mobile: {
+    contactNumber: {
       type: String,
       default: "",
     },

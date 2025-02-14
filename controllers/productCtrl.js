@@ -55,12 +55,23 @@ exports.getProducts = async (req, res) => {
       productsQuery = productsQuery.sort({ [sortBy]: 1 }); // Sorting by specified field
     }
 
-    // Pagination
-    productsQuery = productsQuery
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
     const products = await productsQuery;
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.getBrandProducts = async (req, res) => {
+  try {
+    const { brandId } = req.query;
+    if (!brandId || !mongoose.Types.ObjectId.isValid(brandId)) {
+      return res.status(400).json({ error: "Invalid or missing brand ID" });
+    }
+    const products = await Product.find({ brandId })
+      .skip((req.query.page - 1) * req.query.limit)
+      .limit(parseInt(req.query.limit));
+
     res.status(200).json(products);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -69,7 +80,12 @@ exports.getProducts = async (req, res) => {
 
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id); // Populate brand details
+    const product = await Product.findById(req.params.id).populate(
+      "brand",
+      null,
+      null,
+      { strictPopulate: false }
+    );
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }

@@ -1,7 +1,10 @@
 const Users = require("../models/userModel");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const jwt = require( "jsonwebtoken" );
+const crypto = require( "crypto" ); 
+const twilio = require("twilio");
 const passport = require("../middleware/passport");
+
 
 const authCtrl = {
   googleLogin: passport.authenticate("google", {
@@ -66,7 +69,8 @@ const authCtrl = {
   // User registration route
   register: async (req, res) => {
     try {
-      const { fullname, username, email, password, gender } = req.body;
+      const { fullname, username, email, contactNumber, password, gender } =
+        req.body;
 
       let newUserName = username.toLowerCase().replace(/ /g, "");
 
@@ -82,6 +86,13 @@ const authCtrl = {
           .json({ msg: "This email is already registered." });
       }
 
+      const user_mobile = await Users.findOne({ contactNumber });
+      if (user_mobile) {
+        return res
+          .status(400)
+          .json({ msg: "This mobile number is already registered." });
+      }
+
       if (password.length < 6) {
         return res
           .status(400)
@@ -94,6 +105,7 @@ const authCtrl = {
         fullname,
         username: newUserName,
         email,
+        contactNumber,
         password: passwordHash,
         gender,
       });
@@ -200,20 +212,41 @@ const authCtrl = {
   // User login route
   login: async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, contactNumber, password } = req.body;
 
-      const user = await Users.findOne({ email, role: "user" }).populate(
-        "followers following",
-        "-password"
-      );
+      let user;
 
-      if (!user) {
-        return res.status(400).json({ msg: "Email or Password is incorrect." });
+      // Check if the login is by email or contact number
+      if (email) {
+        user = await Users.findOne({ email, role: "user" }).populate(
+          "followers following",
+          "-password"
+        );
+      } else if (contactNumber) {
+        user = await Users.findOne({
+          contactNumber,
+          role: "user",
+        }).populate("followers following", "-password");
+
+        // Skip the password check if logging in with contact
+        if (!user) {
+          return res.status(400).json({ msg: "Contact number is incorrect." });
+        }
       }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ msg: "Email or Password is incorrect." });
+      // If no user is found with the provided email or contact number
+      if (!user) {
+        return res
+          .status(400)
+          .json({ msg: "Email or Contact number is incorrect." });
+      }
+
+      // Check password only when logging in with email
+      if (email) {
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ msg: "Password is incorrect." });
+        }
       }
 
       const access_token = createAccessToken({ id: user._id });
@@ -223,7 +256,7 @@ const authCtrl = {
         httpOnly: true,
         path: "/api/refresh_token",
         sameSite: "lax",
-        maxAge: 30 * 24 * 60 * 60 * 1000, //validity of 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000, // validity of 30 days
       });
 
       res.json({
@@ -231,7 +264,7 @@ const authCtrl = {
         access_token,
         user: {
           ...user._doc,
-          password: "",
+          password: "", // Don't return the password in the response
         },
       });
     } catch (err) {
