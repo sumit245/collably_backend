@@ -54,11 +54,6 @@ exports.getProducts = async (req, res) => {
       productsQuery = productsQuery.sort({ [sortBy]: 1 }); // Sorting by specified field
     }
 
-    // Pagination
-    productsQuery = productsQuery
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
     const products = await productsQuery;
     res.status(200).json(products);
   } catch (error) {
