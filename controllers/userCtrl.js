@@ -159,32 +159,32 @@ const userCtrl = {
   },
 
   // Login user and return referral link
-  loginUser: async (req, res) => {
-    try {
-      const { email, password } = req.body;
+  // loginUser: async (req, res) => {
+  //   try {
+  //     const { email, password } = req.body;
 
-      const user = await Users.findOne({ email });
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+  //     const user = await Users.findOne({ email });
+  //     if (!user) {
+  //       return res.status(404).json({ message: "User not found" });
+  //     }
 
-      // Check password (assuming you are hashing the password)
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ message: "Invalid credentials" });
-      }
+  //     // Check password (assuming you are hashing the password)
+  //     const isMatch = await bcrypt.compare(password, user.password);
+  //     if (!isMatch) {
+  //       return res.status(400).json({ message: "Invalid credentials" });
+  //     }
 
-      // Send the user along with the referral link
-      res.status(200).json({
-        message: "Login successful",
-        user,
-        referralLink: `https://yourapp.com/referral/${user.referralCode}`, // Return referral link
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error logging in" });
-    }
-  },
+  //     // Send the user along with the referral link
+  //     res.status(200).json({
+  //       message: "Login successful",
+  //       user,
+  //       referralLink: `https://yourapp.com/referral/${user.referralCode}`, // Return referral link
+  //     });
+  //   } catch (error) {
+  //     console.error(error);
+  //     res.status(500).json({ message: "Error logging in" });
+  //   }
+  // },
 };
 
 module.exports = userCtrl;
