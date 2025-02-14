@@ -6,25 +6,20 @@ const { uploadVideo, uploadImages } = require("../middleware/uploadMiddleware");
 
 const postCtrl = {
   createPost: (req, res) => {
-    // First handle image upload
+  
     uploadImages(req, res, (err) => {
       if (err) {
         console.log("Image upload error:", err.message);
         return res.status(400).json({ msg: err.message });
       }
-
-      // Then handle video upload
       uploadVideo(req, res, async (err) => {
         if (err) {
           console.log("Video upload error:", err.message);
           return res.status(400).json({ msg: err.message });
         }
-
-        // Initialize variables for images and video
         const images = [];
         let video = null;
 
-        // Process the uploaded files (images)
         if (req.files && req.files.length > 0) {
           req.files.forEach((file) => {
             if (file.mimetype.startsWith("image/")) {
