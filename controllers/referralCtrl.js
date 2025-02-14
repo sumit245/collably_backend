@@ -73,14 +73,12 @@ exports.createReferral = async (req, res) => {
       return res.status(400).json({ message: "Invalid userId" });
     }
 
-    // Query the Users collection to get the username (Use 'Users' instead of 'User')
-    const user = await Users.findById(userId); // Corrected here
+    const user = await Users.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const username = user.username; // Assuming 'username' is the field in your User model
-
+    const username = user.username;
     let urlParts = productUrl.split("?")[0];
     let path = urlParts.substring(urlParts.indexOf("https://") + 8);
 
@@ -92,12 +90,12 @@ exports.createReferral = async (req, res) => {
       return res.status(400).json({ message: "Referral code already exists" });
     }
 
-    const referralLink = `collably//${path}//${referralCode}`;
+    const referralLink = `https://${path}//${referralCode}`;
 
     // Create the new referral
     const referral = new Referral({
       userId,
-      username, // Include the username here
+      username,
       referralCode,
       referralLink,
       iscount: 0,
