@@ -5,28 +5,6 @@ const crypto = require( "crypto" );
 const twilio = require("twilio");
 const passport = require("../middleware/passport");
 
-const OTP_EXPIRY = 5 * 60 * 1000; // OTP expiry time in milliseconds (5 minutes)
-let otpStore = {}; // Store OTPs temporarily (a simple in-memory store)
-
-// Helper function to generate a random OTP
-const generateOTP = () => {
-  const otp = crypto.randomInt(100000, 999999); // 6-digit OTP
-  return otp;
-};
-
-// Function to send OTP to a user's mobile number using Twilio (SMS)
-const sendOTP = (mobile, otp) => {
-  const client = twilio(
-    process.env.TWILIO_SID, 
-    process.env.TWILIO_AUTH_TOKEN
-  );
-
-  client.messages.create({
-    body: `Your OTP code is: ${otp}`,
-    from: process.env.TWILIO_PHONE_NUMBER,
-    to: mobile
-  });
-};
 
 const authCtrl = {
   googleLogin: passport.authenticate("google", {
@@ -91,7 +69,7 @@ const authCtrl = {
   // User registration route
   register: async (req, res) => {
     try {
-      const { fullname, username, email, mobile, password, gender } = req.body;
+      const { fullname, username, email, contactNumber, password, gender } = req.body;
 
       let newUserName = username.toLowerCase().replace(/ /g, "");
 
@@ -107,7 +85,7 @@ const authCtrl = {
           .json({ msg: "This email is already registered." });
       }
 
-      const user_mobile = await Users.findOne({ contactNumber: mobile });
+      const user_mobile = await Users.findOne({ contactNumber });
       if (user_mobile) {
         return res
           .status(400)
@@ -126,7 +104,7 @@ const authCtrl = {
         fullname,
         username: newUserName,
         email,
-        contactNumber: mobile, // Store mobile number here
+        contactNumber,
         password: passwordHash,
         gender,
       });
