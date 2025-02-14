@@ -111,6 +111,15 @@ const orderCtrl = {
     }
   },
 
+  getAllByPassedOrders: async (req, res) => {
+    try {
+      const orders = await Order.find()
+      res.json({ orders })
+    } catch (err) {
+      console.error(err)
+    }
+  },
+
   // Cancel an order (by user)
   cancelOrder: async (req, res) => {
     try {
