@@ -10,7 +10,6 @@ router.post("/changePassword", auth, authCtrl.changePassword);
 
 
 router.post( "/login", authCtrl.login );
-
 router.post("/admin_login", authCtrl.adminLogin);
 
 
