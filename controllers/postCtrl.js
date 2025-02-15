@@ -68,6 +68,8 @@ const postCtrl = {
 
   getPosts: async (req, res) => {
     try {
+      // Yaha se bhi req.user.following hata diya hai isse kisi bhi user ko kisi ka bhi post dikhega aaj submit karke ye params
+      // pass kar dena req.user.following and req.user._id wala
       const posts = await Posts.find()   //user: [...req.user.following, req.user._id],
         .sort("-createdAt")
         .populate("user likes", "avatar username fullname followers")
