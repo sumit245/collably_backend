@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const referralCtrl = require("../controllers/referralCtrl");
-const Referral = require("../models/referralModel");
-const Product = require("../models/productModel");
-const Users = require("../models/userModel");
+// const Referral = require("../models/referralModel");
+// const Product = require("../models/productModel");
+// const Users = require("../models/userModel");
 
 router.post("/createreferral", referralCtrl.createReferral);
 
