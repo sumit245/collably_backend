@@ -5,28 +5,6 @@ const crypto = require( "crypto" );
 const twilio = require("twilio");
 const passport = require("../middleware/passport");
 
-const OTP_EXPIRY = 5 * 60 * 1000; // OTP expiry time in milliseconds (5 minutes)
-let otpStore = {}; // Store OTPs temporarily (a simple in-memory store)
-
-// Helper function to generate a random OTP
-const generateOTP = () => {
-  const otp = crypto.randomInt(100000, 999999); // 6-digit OTP
-  return otp;
-};
-
-// Function to send OTP to a user's mobile number using Twilio (SMS)
-const sendOTP = (mobile, otp) => {
-  const client = twilio(
-    process.env.TWILIO_SID, 
-    process.env.TWILIO_AUTH_TOKEN
-  );
-
-  client.messages.create({
-    body: `Your OTP code is: ${otp}`,
-    from: process.env.TWILIO_PHONE_NUMBER,
-    to: mobile
-  });
-};
 
 const authCtrl = {
   googleLogin: passport.authenticate("google", {
@@ -91,7 +69,8 @@ const authCtrl = {
   // User registration route
   register: async (req, res) => {
     try {
-      const { fullname, username, email, mobile, password, gender } = req.body;
+      const { fullname, username, email, contactNumber, password, gender } =
+        req.body;
 
       let newUserName = username.toLowerCase().replace(/ /g, "");
 
@@ -107,7 +86,7 @@ const authCtrl = {
           .json({ msg: "This email is already registered." });
       }
 
-      const user_mobile = await Users.findOne({ contactNumber: mobile });
+      const user_mobile = await Users.findOne({ contactNumber });
       if (user_mobile) {
         return res
           .status(400)
@@ -126,7 +105,7 @@ const authCtrl = {
         fullname,
         username: newUserName,
         email,
-        contactNumber: mobile, // Store mobile number here
+        contactNumber,
         password: passwordHash,
         gender,
       });
@@ -233,32 +212,41 @@ const authCtrl = {
   // User login route
   login: async (req, res) => {
     try {
-      const { email, mobile, password } = req.body;
+      const { email, contactNumber, password } = req.body;
 
       let user;
 
-      // Check if the login is by email or mobile number
+      // Check if the login is by email or contact number
       if (email) {
         user = await Users.findOne({ email, role: "user" }).populate(
           "followers following",
           "-password"
         );
-      } else if (mobile) {
+      } else if (contactNumber) {
         user = await Users.findOne({
-          contactNumber: mobile,
+          contactNumber,
           role: "user",
         }).populate("followers following", "-password");
+
+        // Skip the password check if logging in with contact
+        if (!user) {
+          return res.status(400).json({ msg: "Contact number is incorrect." });
+        }
       }
 
+      // If no user is found with the provided email or contact number
       if (!user) {
         return res
           .status(400)
-          .json({ msg: "Email or Mobile number is incorrect." });
+          .json({ msg: "Email or Contact number is incorrect." });
       }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ msg: "Password is incorrect." });
+      // Check password only when logging in with email
+      if (email) {
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ msg: "Password is incorrect." });
+        }
       }
 
       const access_token = createAccessToken({ id: user._id });
@@ -268,7 +256,7 @@ const authCtrl = {
         httpOnly: true,
         path: "/api/refresh_token",
         sameSite: "lax",
-        maxAge: 30 * 24 * 60 * 60 * 1000, //validity of 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000, // validity of 30 days
       });
 
       res.json({

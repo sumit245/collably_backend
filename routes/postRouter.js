@@ -1,10 +1,11 @@
 const router = require("express").Router();
 const auth = require("../middleware/auth");
 const postCtrl = require("../controllers/postCtrl");
+const upload = require("../middleware/uploadMiddleware");
 
-router.route("/posts")
-  .post(auth, postCtrl.createPost)
-  .get(auth, postCtrl.getPosts);
+// router.route("/posts").post(postCtrl.createPost)
+router.post("/posts", auth, upload, postCtrl.createPost);  //jab test kar lo to yaha auth middleware likhna hoga
+router.get('/posts', postCtrl.getPosts);
 
 router.route("/post/:id")
   .patch(auth, postCtrl.updatePost)

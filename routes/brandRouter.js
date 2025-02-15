@@ -19,11 +19,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.post(
-  "/createbrand",
-  upload.single("brandLogo"),
-  brandController.createBrand
-);
+router.post("/brands", upload.single("brandLogo"), brandController.createBrand);
 
 router.post("/brandlogin", brandController.login);
 router.get("/brands", brandController.getAllBrands);
@@ -31,7 +27,7 @@ router.get("/brands", brandController.getAllBrands);
 router.get("/brand/:id", brandController.getBrandById);
 
 router.put(
-  "/brandupdate/:id",
+  "/brands/:id",
   upload.single("brandLogo"),
   (req, res, next) => {
     const { id } = req.params;
@@ -44,7 +40,7 @@ router.put(
 );
 
 router.delete(
-  "/brand/:id",
+  "/brands/:id",
   (req, res, next) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
