@@ -1,8 +1,7 @@
-const Brand = require("../models/brandModel");
+const Brand = require("../models/BrandModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const JWT_SECRET = "your_jwt_secret_key";
-
 
 exports.createBrand = async (req, res) => {
   try {
@@ -15,10 +14,9 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password, 
+      password,
     } = req.body;
-    const brandLogo = req.file ? req.file.path : null; 
-
+    const brandLogo = req.file ? req.file.path : null;
 
     const existingBrand = await Brand.findOne({ contactEmail });
     if (existingBrand) {
@@ -38,9 +36,8 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password, 
+      password,
     });
-
 
     await brand.save();
     res.status(201).json({ message: "Brand created successfully", brand });
@@ -94,7 +91,6 @@ exports.login = async (req, res) => {
   }
 };
 
-
 // Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
@@ -107,7 +103,6 @@ exports.getAllBrands = async (req, res) => {
       .json({ message: "Error fetching brands", error: err.message });
   }
 };
-
 
 // Get a single brand by ID
 exports.getBrandById = async (req, res) => {
@@ -124,7 +119,6 @@ exports.getBrandById = async (req, res) => {
       .json({ message: "Error fetching brand", error: err.message });
   }
 };
-
 
 // Update a brand by ID
 exports.updateBrand = async (req, res) => {

@@ -4,18 +4,18 @@ const referralSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
-      required: true,
+      // required: true,
     },
     brandId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Brand",
-      required: true,
+      // required: true,
     },
     discount: Number,
     expiresAt: Date,

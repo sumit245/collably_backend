@@ -3,16 +3,16 @@ const mongoose = require("mongoose");
 
 exports.createProduct = async (req, res) => {
   try {
-    const { brandid, productname, description, price, quantity, category } =
+    const { brandId, productname, description, price, quantity, category } =
       req.body;
 
     // Validate that brand is an ObjectId
-    if (!mongoose.Types.ObjectId.isValid(brandid)) {
+    if (!mongoose.Types.ObjectId.isValid(brandId)) {
       return res.status(400).json({ error: "Invalid brand ID" });
     }
 
     const product = new Product({
-      brandid,
+      brandId,
       productname,
       description,
       price,
@@ -55,11 +55,6 @@ exports.getProducts = async (req, res) => {
       productsQuery = productsQuery.sort({ [sortBy]: 1 }); // Sorting by specified field
     }
 
-    // Pagination
-    productsQuery = productsQuery
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
     const products = await productsQuery;
     res.status(200).json(products);
   } catch (error) {
@@ -90,7 +85,7 @@ exports.getProductById = async (req, res) => {
       null,
       null,
       { strictPopulate: false }
-    ); 
+    );
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }

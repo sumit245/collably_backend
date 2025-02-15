@@ -10,6 +10,7 @@ const corsOptions = {
   Credential: "true",
   origin: "*",
 };
+
 const app = express();
 
 app.use(cors(corsOptions));
