@@ -4,7 +4,7 @@ const path = require("path");
 
 const videoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/logos/");
+    cb(null, "uploads/videos/"); // Save videos to the "uploads/videos" directory
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
@@ -21,12 +21,13 @@ const videoFileFilter = (req, file, cb) => {
 
 const imageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/logos/");
+    cb(null, "uploads/images/"); // Save images to the "uploads/images" directory
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
   },
 });
+
 
 const imageFileFilter = (req, file, cb) => {
   const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/jpg"];

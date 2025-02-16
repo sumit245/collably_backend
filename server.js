@@ -12,6 +12,7 @@ const corsOptions = {
   origin: "*",
 };
 
+
 const app = express();
 
 app.use(cors(corsOptions));

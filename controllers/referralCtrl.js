@@ -4,44 +4,104 @@ const Product = require("../models/productModel");
 const Users = require("../models/userModel");
 const generateReferralCode = require("../utils/generateReferralCode");
 
+// exports.createReferral = async (req, res) => {
+//   try {
+//     const { userId, brandId, productId } = req.body;
+
+//     // Ensure valid ObjectId format
+//     if (!mongoose.Types.ObjectId.isValid(userId)) {
+//       return res.status(400).json({ message: "Invalid userId" });
+//     }
+//     if (!mongoose.Types.ObjectId.isValid(brandId)) {
+//       return res.status(400).json({ message: "Invalid brandId" });
+//     }
+//     if (!mongoose.Types.ObjectId.isValid(productId)) {
+//       return res.status(400).json({ message: "Invalid productId" });
+//     }
+
+//     // Step 1: Fetch product name to create the referral link
+//     const product = await Product.findById(productId);
+//     if (!product) {
+//       return res.status(404).json({ message: "Product not found" });
+//     }
+
+//     // Step 2: Generate the 6-digit referral code
+//     const referralCode = generateReferralCode(); // e.g., "abx5fg"
+
+//     // Check if referralCode already exists
+//     const existingReferral = await Referral.findOne({ referralCode });
+//     if (existingReferral) {
+//       return res.status(400).json({ message: "Referral code already exists" });
+//     }
+
+//     // Step 3: Create the referral link
+//     const referralLink = `https://collab.ly/${product.productname.toLowerCase()}/${referralCode}`;
+
+//     // Step 4: Create the referral object and save it
+//     const referral = new Referral({
+//       userId,
+//       productId,
+//       brandId,
+//       referralCode,
+//       referralLink,
+//       iscount: 0,
+//       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+//     });
+
+//     console.log("Referral to be saved:", referral);
+
+//     await referral.save();
+
+//     // Step 5: Return the referral data
+//     res.status(201).json({
+//       message: "Referral created successfully",
+//       referral,
+//       referralLink, // Send back the referral link
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Error creating referral" });
+//   }
+// };
+
 exports.createReferral = async (req, res) => {
   try {
-    const { userId, brandId, productId } = req.body;
+    const { userId, productUrl } = req.body;
 
-    // Ensure valid ObjectId format
+    // Validate the userId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid userId" });
     }
-    if (!mongoose.Types.ObjectId.isValid(brandId)) {
-      return res.status(400).json({ message: "Invalid brandId" });
-    }
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: "Invalid productId" });
-    }
 
-    // Step 1: Fetch product name to create the referral link
-    const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+    // Query the Users collection to get the username
+    const user = await Users.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Step 2: Generate the 6-digit referral code
-    const referralCode = generateReferralCode(); // e.g., "abx5fg"
+    const username = user.username;
 
-    // Check if referralCode already exists
+    // Make sure to preserve the entire URL
+    let urlParts = new URL(productUrl); // Using URL constructor ensures we get the full URL
+    let baseUrl = urlParts.origin; // This will give the full domain + protocol (e.g., https://www.example.com)
+    let path = urlParts.pathname; // This will give the path (e.g., /product/123)
+
+    // Generate a unique referral code
+    const referralCode = generateReferralCode();
+
+    // Check if the referral code already exists
     const existingReferral = await Referral.findOne({ referralCode });
     if (existingReferral) {
       return res.status(400).json({ message: "Referral code already exists" });
     }
 
-    // Step 3: Create the referral link
-    const referralLink = `https://collab.ly/${product.productname.toLowerCase()}/${referralCode}`;
+    // Construct the referral link using the full URL (base + path)
+    const referralLink = `${baseUrl}${path}?referralCode=${referralCode}`;
 
-    // Step 4: Create the referral object and save it
+    // Create the new referral object
     const referral = new Referral({
       userId,
-      productId,  
-      brandId,
+      username,
       referralCode,
       referralLink,
       iscount: 0,
@@ -52,11 +112,12 @@ exports.createReferral = async (req, res) => {
 
     await referral.save();
 
-    // Step 5: Return the referral data
+    // Return the response with the referral and username
     res.status(201).json({
       message: "Referral created successfully",
       referral,
-      referralLink, // Send back the referral link
+      referralLink,
+      username,
     });
   } catch (error) {
     console.error(error);
@@ -64,18 +125,28 @@ exports.createReferral = async (req, res) => {
   }
 };
 
-exports.getReferralById = async (req, res) => {
+exports.getReferralsByUserId = async (req, res) => {
   try {
-    const referral = await Referral.findById(req.params.id);
+    const { id } = req.params; 
 
-    if (!referral) {
-      return res.status(404).json({ message: "Referral not found" });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid userId" });
     }
 
-    res.json(referral);
+    const referrals = await Referral.find({
+      userId: new mongoose.Types.ObjectId(id),
+    });
+
+    if (referrals.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No referrals found for this user" });
+    }
+
+    res.status(200).json(referrals);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching referral" });
+    console.error("Error fetching referrals:", error);
+    res.status(500).json({ message: "Error fetching referrals for the user" });
   }
 };
 
@@ -99,10 +170,18 @@ exports.getReferralByName = async (req, res) => {
 };
 
 exports.getAllReferrals = async (req, res) => {
-  // res.json({ "message": "I am hit" })
   try {
-    const referrals = await Referral.find();
-    res.json(referrals);
+  
+    const referrals = await Referral.find()
+      .populate("userId", "username") 
+      .exec(); // Execute the query
+
+    if (referrals.length === 0) {
+      return res.status(404).json({ message: "No referrals found" });
+    }
+
+    // Return the populated referrals with the username included
+    res.status(200).json(referrals);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching all referrals" });
@@ -113,54 +192,58 @@ exports.getReferralByCode = async (req, res) => {
   try {
     const { code } = req.params;
 
-    // Find referral by code
+    // Find the referral by referralCode
     const referral = await Referral.findOne({ referralCode: code });
     if (!referral) {
       return res.status(404).json({ msg: "Referral not found" });
     }
 
     // Increment the clicks field by 1
-    referral.clicks += 1;
-    await referral.save();
+    referral.clicks += 1; // Increment the number of clicks
+    await referral.save(); // Save the updated referral document
 
-    // Fetch the referred product and the user who created the referral
-    const { productId, userId } = referral;
-    const referredProduct = await Product.findById(productId, {
-      productname: 1,
-      description: 1,
-      price: 1,
-      category: 1,
-    });
-    const { productname, description, category, price } = referredProduct; //Object destructuring
-    const productID = referredProduct._id;
+    // Redirect to the product page using the referral link
+    const productUrl = referral.referralLink; // This is the full referral link
 
-    const referredBy = await Users.findById(userId, {
-      fullname: 1,
-      username: 1,
-    });
-    const { fullname, username } = referredBy;
-    const userID = referredBy._id;
-    if (referredProduct) {
-      // Return the updated referral data
-      res.status(200).json({
-        productname,
-        description,
-        category,
-        price,
-        productID,
-        fullname,
-        username,
-        userID,
-
-        clicks: referral.clicks, // Send the updated click count
-      });
-    } else {
-      res.status(404).json({
-        msg: "No product linked with this referral",
-      });
+    if (!productUrl) {
+      return res
+        .status(404)
+        .json({ msg: "No product URL linked with this referral" });
     }
+
+    // Return the updated referral data (you can also return the click count here)
+    res.status(200).json({
+      message: "Referral link clicked",
+      clicks: referral.clicks, // Include the updated clicks count
+      redirectUrl: productUrl, // Return the referral link as a redirect URL
+    });
+
+    // Optionally, you can redirect the user:
+    // res.redirect(productUrl);
   } catch (err) {
     console.error(err);
     res.status(500).send(err);
   }
 };
+
+exports.getReferralClicks = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    // Find the referral by code
+    const referral = await Referral.findOne({ referralCode: code });
+    if (!referral) {
+      return res.status(404).json({ message: "Referral not found" });
+    }
+
+    // Return the clicks count
+    res.status(200).json({
+      referralCode: referral.referralCode,
+      clicks: referral.clicks, // Show the number of clicks
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching referral clicks" });
+  }
+};
+

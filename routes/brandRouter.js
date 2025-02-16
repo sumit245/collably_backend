@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.post(
-  "/createbrand",
+  "/brands",
   upload.single("brandLogo"),
   brandController.createBrand
 );
