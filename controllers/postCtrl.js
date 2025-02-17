@@ -5,7 +5,6 @@ const Users = require("../models/userModel");
 const postCtrl = {
   createPost: async (req, res) => {
     try {
-      console.log("Received request:", req.body);
       console.log("Uploaded files:", req.files);
       // Check if files are uploaded
       if (!req.files || req.files.media?.length === 0) {
