@@ -32,10 +32,10 @@ const userCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-  
+
   getAllUsers: async (req, res) => {
     try {
-      const user = await Users.find()
+      const user = await Users.find();
       if (!user) {
         return res.status(400).json({ msg: "requested user does not exist." });
       }
@@ -82,8 +82,8 @@ const userCtrl = {
         { _id: req.params.id },
         {
           $push: {
-            followers: req.user._id
-          }
+            followers: req.user._id,
+          },
         }
       ).populate("followers following", "-password");
 
