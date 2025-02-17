@@ -1,6 +1,5 @@
 const Brand = require("../models/brandModel");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const JWT_SECRET = "your_jwt_secret_key";
 
 
