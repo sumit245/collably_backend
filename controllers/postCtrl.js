@@ -179,21 +179,41 @@ const postCtrl = {
   },
 
   getUserPosts: async (req, res) => {
-    try {
-      const features = new APIfeatures(
-        Posts.find({ user: req.params.id }),
-        req.query
-      ).paginating();
-      const posts = await features.query.sort("-createdAt");
+  try {
+    const { page = 1, limit = 10 } = req.query; // Default page is 1 and limit is 10
+    const skip = (page - 1) * limit; // Calculate how many posts to skip
 
-      res.json({
-        posts,
-        result: posts.length,
+    // Fetch posts for the user, apply pagination (skip & limit), and sort by creation date
+    const posts = await Posts.find({ user: req.params.id }) // Find posts for the specific user
+      .sort('-createdAt') // Sort by creation date (newest first)
+      .skip(skip) // Skip the posts for pagination
+      .limit(Number(limit)) // Limit the number of posts per page
+
+      // Populate user and likes info for each post
+      .populate("user likes", "avatar username fullname followers")
+      .populate({
+        path: "comments",
+        populate: {
+          path: "user likes",
+          select: "-password",
+        },
       });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
-    }
-  },
+
+    // Get the total number of posts for the user (to handle pagination)
+    const totalPosts = await Posts.countDocuments({ user: req.params.id });
+
+    res.json({
+      msg: "User posts fetched successfully",
+      posts,
+      totalPosts, // Include the total number of posts
+      totalPages: Math.ceil(totalPosts / limit), // Total number of pages
+      currentPage: Number(page), // Current page number
+    });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+},
+
 
   getPost: async (req, res) => {
     try {
