@@ -4,7 +4,7 @@ const postCtrl = require("../controllers/postCtrl");
 const upload = require("../middleware/uploadMiddleware");
 
 // router.route("/posts").post(postCtrl.createPost)
-router.post("/posts", auth, upload, postCtrl.createPost);  //jab test kar lo to yaha auth middleware likhna hoga
+router.post("/posts", auth, upload, postCtrl.createPost); 
 router.get('/posts', postCtrl.getPosts);
 
 router.route("/post/:id")
