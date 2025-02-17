@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const SocketServer = require("./socketServer");
 const session = require("express-session");
 const passport = require("./middleware/passport");
+
 const corsOptions = {
   Credential: "true",
   origin: "*",
@@ -56,6 +57,7 @@ mongoose
   .connect(URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+
   })
   .then(() => {
     console.log("Database Connected!!");
@@ -67,6 +69,6 @@ mongoose
 const port = process.env.PORT || 5000;
 http.listen(port, () => {
   console.log("Listening on ", port);
-} );
+});
 
 

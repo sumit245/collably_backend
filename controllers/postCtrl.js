@@ -1,83 +1,76 @@
 const Posts = require("../models/postModel");
 const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
-const { uploadVideo, uploadImages } = require("../middleware/uploadMiddleware");
-
 
 const postCtrl = {
-  createPost: (req, res) => {
-  
-    uploadImages(req, res, (err) => {
-      if (err) {
-        console.log("Image upload error:", err.message);
-        return res.status(400).json({ msg: err.message });
+  createPost: async (req, res) => {
+    try {
+      console.log("Received request:", req.body);
+      console.log("Uploaded files:", req.files);
+      // Check if files are uploaded
+      if (!req.files || req.files.media?.length === 0) {
+        return res.status(400).json({ msg: "Please add an image or a video." });
       }
-      uploadVideo(req, res, async (err) => {
-        if (err) {
-          console.log("Video upload error:", err.message);
-          return res.status(400).json({ msg: err.message });
-        }
-        const images = [];
-        let video = null;
 
-        if (req.files && req.files.length > 0) {
-          req.files.forEach((file) => {
-            if (file.mimetype.startsWith("image/")) {
-              images.push(file.path); // Save image path
-            } else if (file.mimetype.startsWith("video/")) {
-              video = file.path; // Save video path
-            }
-          });
-        }
+      let images = [];
+      let video = null;
 
-        // Check if there are no images or videos
-        if (images.length === 0 && !video) {
-          return res
-            .status(400)
-            .json({ msg: "Please add at least one image or a video." });
-        }
-
-        // Extract content from the request body
-        const { content } = req.body;
-
-        // Create a new post with images and video paths
-        const newPost = new Posts({
-          content,
-          images,
-          video,
-          user: req.user._id,
-        });
-
-        try {
-          // Save the post to the database
-          await newPost.save();
-
-          // Respond with the new post data
-          res.json({
-            msg: "Post created successfully.",
-            newPost: {
-              ...newPost._doc,
-              user: req.user,
-            },
-          });
-        } catch (err) {
-          console.log("Error saving post:", err);
-          return res.status(500).json({ msg: err.message });
+      // Determine if uploaded media is images or a video
+      req.files.forEach((file) => {
+        if (file.mimetype.startsWith("image/")) {
+          images.push(file.path);
+        } else if (file.mimetype.startsWith("video/")) {
+          video = file.path;
         }
       });
-    });
+
+      // Ensure either images OR video is uploaded, not both
+      if (images.length > 0 && video) {
+        return res.status(400).json({ msg: "You can upload either images or a video, not both." });
+      }
+
+      // Extract text data from request
+      const { content, caption, body, tags } = req.body;
+      console.log("Extracted data:", { content, caption, body, tags });
+
+      // Check if the model is properly defined
+      // if (!global.Posts) {
+      //   console.error("Posts model is not defined!");
+      //   return res.status(500).json({ msg: "Server error: Model not found." });
+      // }
+
+      // Create a new post
+      const newPost = new Posts({
+        content,
+        caption,
+        body,
+        tags: tags ? tags.split(",") : [], // Convert comma-separated tags to an array
+        images,
+        video,
+        // user: req.user._id,
+      });
+
+      // Save to database
+      await newPost.save();
+
+      return res.json({
+        msg: "Post created successfully.",
+        newPost: {
+          ...newPost._doc,
+          // user: req.user,
+        },
+      });
+    } catch (err) {
+      console.error("Error creating post:", err);
+      return res.status(500).json({ msg: "Server error. Please try again later." });
+    }
   },
 
   getPosts: async (req, res) => {
     try {
-      const features = new APIfeatures(
-        Posts.find({
-          user: [...req.user.following, req.user._id],
-        }),
-        req.query
-      ).paginating();
-
-      const posts = await features.query
+      // Yaha se bhi req.user.following hata diya hai isse kisi bhi user ko kisi ka bhi post dikhega aaj submit karke ye params
+      // pass kar dena req.user.following and req.user._id wala
+      const posts = await Posts.find()   //user: [...req.user.following, req.user._id],
         .sort("-createdAt")
         .populate("user likes", "avatar username fullname followers")
         .populate({

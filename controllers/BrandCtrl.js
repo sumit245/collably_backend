@@ -15,9 +15,9 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password, 
+      password,
     } = req.body;
-    const brandLogo = req.file ? req.file.path : null; 
+    const brandLogo = req.file ? req.file.path : null;
 
 
     const existingBrand = await Brand.findOne({ contactEmail });
@@ -38,7 +38,7 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password, 
+      password,
     });
 
 
@@ -98,7 +98,6 @@ exports.login = async (req, res) => {
 // Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
-    console.log("Request:", req.params); // Add logging here
     const brands = await Brand.find();
     res.status(200).json(brands);
   } catch (err) {

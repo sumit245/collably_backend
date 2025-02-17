@@ -13,24 +13,24 @@ passport.use(
       clientSecret: clientSecret,
       callbackURL: `http://127.0.0.1:5000/api/auth/google/callback`,
     },
-    (accessToken, refreshToken, profile, done) => {
-      done(null, profile);
+    (accessToken, refreshToken, profile, callback) => {
+      console.log(profile)
     }
   )
 );
 
-passport.use(
-  "instagram",
-  new InstagramStrategy(
-    {
-      clientID: process.env.APP_ID,
-      clientSecret: process.env.APP_SECRET,
-      callbackURL: "http://localhost:5000/api/auth/instagram/callback",
-    },
-    (accessToken, refreshToken, profile, done) => {
-      done(null, profile);
-    }
-  )
-);
+// passport.use(
+//   "instagram",
+//   new InstagramStrategy(
+//     {
+//       clientID: process.env.APP_ID,
+//       clientSecret: process.env.APP_SECRET,
+//       callbackURL: "http://localhost:5000/api/auth/instagram/callback",
+//     },
+//     (accessToken, refreshToken, profile, done) => {
+//       done(null, profile);
+//     }
+//   )
+// );
 
 module.exports = passport;

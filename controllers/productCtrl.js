@@ -3,15 +3,16 @@ const mongoose = require("mongoose");
 
 exports.createProduct = async (req, res) => {
   try {
-    const { brandId, productname, description, price, quantity, category } = req.body;
+    const { brandid, productname, description, price, quantity, category } =
+      req.body;
 
     // Validate that brand is an ObjectId
-    if (!mongoose.Types.ObjectId.isValid(brandId)) {
+    if (!mongoose.Types.ObjectId.isValid(brandid)) {
       return res.status(400).json({ error: "Invalid brand ID" });
     }
 
     const product = new Product({
-      brandId,
+      brandid,
       productname,
       description,
       price,
@@ -84,7 +85,7 @@ exports.getProductById = async (req, res) => {
       null,
       null,
       { strictPopulate: false }
-    ); 
+    );
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
