@@ -3,7 +3,7 @@ const auth = require("../middleware/auth");
 const postCtrl = require("../controllers/postCtrl");
 const upload = require("../middleware/uploadMiddleware");
 
-// router.route("/posts").post(postCtrl.createPost)
+
 router.post("/posts", auth, upload, postCtrl.createPost); 
 router.get('/posts', postCtrl.getPosts);
 
