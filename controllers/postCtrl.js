@@ -1,6 +1,6 @@
 const Posts = require("../models/postModel");
 const Comments = require("../models/commentModel");
-const Users = require( "../models/userModel" );
+const Users = require("../models/userModel");
 const mongoose = require("mongoose");
 
 const postCtrl = {
@@ -72,11 +72,9 @@ const postCtrl = {
 
   getPosts: async (req, res) => {
     try {
-      const userFollowing = req.user.following;
-      const userId = req.user._id;
-
-      // Fetch posts from all users (removing req.user.following)
-      const posts = await Posts.find()
+      // Yaha se bhi req.user.following hata diya hai isse kisi bhi user ko kisi ka bhi post dikhega aaj submit karke ye params
+      // pass kar dena req.user.following and req.user._id wala
+      const posts = await Posts.find() //user: [...req.user.following, req.user._id],
         .sort("-createdAt")
         .populate("user likes", "avatar username fullname followers")
         .populate({
@@ -238,8 +236,8 @@ const postCtrl = {
           },
         });
 
-      console.log("Post ID:", id); 
-      console.log("Fetched Post:", post); 
+      console.log("Post ID:", id);
+      console.log("Fetched Post:", post);
 
       if (!post) {
         return res.status(400).json({ msg: "Post does not exist." });
