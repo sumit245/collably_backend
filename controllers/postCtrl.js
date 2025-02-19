@@ -1,6 +1,7 @@
 const Posts = require("../models/postModel");
 const Comments = require("../models/commentModel");
-const Users = require("../models/userModel");
+const Users = require( "../models/userModel" );
+const mongoose = require("mongoose");
 
 const postCtrl = {
   createPost: async (req, res) => {
@@ -25,7 +26,9 @@ const postCtrl = {
 
       // Ensure either images OR video is uploaded, not both
       if (images.length > 0 && video) {
-        return res.status(400).json({ msg: "You can upload either images or a video, not both." });
+        return res
+          .status(400)
+          .json({ msg: "You can upload either images or a video, not both." });
       }
 
       // Extract text data from request
@@ -61,15 +64,19 @@ const postCtrl = {
       });
     } catch (err) {
       console.error("Error creating post:", err);
-      return res.status(500).json({ msg: "Server error. Please try again later." });
+      return res
+        .status(500)
+        .json({ msg: "Server error. Please try again later." });
     }
   },
 
   getPosts: async (req, res) => {
     try {
-      // Yaha se bhi req.user.following hata diya hai isse kisi bhi user ko kisi ka bhi post dikhega aaj submit karke ye params
-      // pass kar dena req.user.following and req.user._id wala
-      const posts = await Posts.find()   //user: [...req.user.following, req.user._id],
+      const userFollowing = req.user.following;
+      const userId = req.user._id;
+
+      // Fetch posts from all users (removing req.user.following)
+      const posts = await Posts.find()
         .sort("-createdAt")
         .populate("user likes", "avatar username fullname followers")
         .populate({
@@ -179,45 +186,15 @@ const postCtrl = {
   },
 
   getUserPosts: async (req, res) => {
-  try {
-    const { page = 1, limit = 10 } = req.query; // Default page is 1 and limit is 10
-    const skip = (page - 1) * limit; // Calculate how many posts to skip
-
-    // Fetch posts for the user, apply pagination (skip & limit), and sort by creation date
-    const posts = await Posts.find({ user: req.params.id }) // Find posts for the specific user
-      .sort('-createdAt') // Sort by creation date (newest first)
-      .skip(skip) // Skip the posts for pagination
-      .limit(Number(limit)) // Limit the number of posts per page
-
-      // Populate user and likes info for each post
-      .populate("user likes", "avatar username fullname followers")
-      .populate({
-        path: "comments",
-        populate: {
-          path: "user likes",
-          select: "-password",
-        },
-      });
-
-    // Get the total number of posts for the user (to handle pagination)
-    const totalPosts = await Posts.countDocuments({ user: req.params.id });
-
-    res.json({
-      msg: "User posts fetched successfully",
-      posts,
-      totalPosts, // Include the total number of posts
-      totalPages: Math.ceil(totalPosts / limit), // Total number of pages
-      currentPage: Number(page), // Current page number
-    });
-  } catch (err) {
-    return res.status(500).json({ msg: err.message });
-  }
-},
-
-
-  getPost: async (req, res) => {
     try {
-      const post = await Posts.findById(req.params.id)
+      const { page = 1, limit = 10 } = req.query;
+      const skip = (page - 1) * limit;
+
+      const posts = await Posts.find({ user: req.params.id })
+        .sort("-createdAt")
+        .skip(skip)
+        .limit(Number(limit))
+
         .populate("user likes", "avatar username fullname followers")
         .populate({
           path: "comments",
@@ -226,6 +203,43 @@ const postCtrl = {
             select: "-password",
           },
         });
+
+      const totalPosts = await Posts.countDocuments({ user: req.params.id });
+
+      res.json({
+        msg: "User posts fetched successfully",
+        posts,
+        totalPosts,
+        totalPages: Math.ceil(totalPosts / limit),
+        currentPage: Number(page),
+      });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  getPost: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Validate the ID
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ msg: "Invalid post ID" });
+      }
+
+      // Fetch the post
+      const post = await Posts.findById(id)
+        .populate("user likes", "avatar username fullname followers")
+        .populate({
+          path: "comments",
+          populate: {
+            path: "user likes",
+            select: "-password",
+          },
+        });
+
+      console.log("Post ID:", id); 
+      console.log("Fetched Post:", post); 
 
       if (!post) {
         return res.status(400).json({ msg: "Post does not exist." });
