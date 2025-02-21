@@ -38,7 +38,6 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      // Hello
       password,
     });
 

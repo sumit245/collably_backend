@@ -46,10 +46,10 @@ const postCtrl = {
         content,
         caption,
         body,
-        tags: tags ? tags.split(",") : [], // Convert comma-separated tags to an array
+        tags: tags ? tags.split(",") : [],
         images,
         video,
-        // user: req.user._id,
+        user: req.user._id,
       });
 
       // Save to database
@@ -187,22 +187,27 @@ const postCtrl = {
     try {
       const { page = 1, limit = 10 } = req.query;
       const skip = (page - 1) * limit;
+      const userId = req.params.id || req.user._id; // Ensure correct userId
 
-      const posts = await Posts.find({ user: req.params.id })
-        .sort("-createdAt")
-        .skip(skip)
-        .limit(Number(limit))
+      console.log("Fetching posts for user ID:", userId); // Log user ID for debugging
 
-        .populate("user likes", "avatar username fullname followers")
+      // Fetch posts for the given user
+      const posts = await Posts.find({ user: userId }) // Match posts with the user ID
+        .sort("-createdAt") // Sort by creation date (most recent first)
+        .skip(skip) // Implement pagination
+        .limit(Number(limit)) // Implement pagination limit
+        .populate("user", "avatar username fullname followers") // Populate user details
         .populate({
-          path: "comments",
+          path: "comments", // Populate comments with user and likes data
           populate: {
             path: "user likes",
-            select: "-password",
+            select: "-password", // Exclude password for privacy
           },
         });
 
-      const totalPosts = await Posts.countDocuments({ user: req.params.id });
+      console.log("Fetched posts:", posts); // Log the populated posts to verify the result
+
+      const totalPosts = await Posts.countDocuments({ user: userId });
 
       res.json({
         msg: "User posts fetched successfully",
