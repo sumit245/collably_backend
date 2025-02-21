@@ -24,4 +24,5 @@ router.patch( "/order/:id/cancel", auth, orderCtrl.cancelOrder );
 
 router.get("/bypassedadmin/orders", orderCtrl.getAllByPassedOrders);
 
+
 module.exports = router;

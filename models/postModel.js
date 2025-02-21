@@ -3,15 +3,12 @@ const { Schema } = mongoose;
 
 const postSchema = new Schema(
   {
-    content: String,
-    images: {
-      type: Array,
-      required: true,
-    },
-    video: {
-      type: String, 
-      default: null, 
-    },
+    content: { type: String, required: false },
+    caption: { type: String },
+    body: { type: String },
+    tags: [{ type: String }],
+    images: [{ type: String }], // Array of image paths
+    video: { type: String }, // Single video path
     likes: [
       {
         type: mongoose.Types.ObjectId,
@@ -40,4 +37,4 @@ const postSchema = new Schema(
   }
 );
 
-module.exports = mongoose.model("post", postSchema);
+module.exports = mongoose.model("Posts", postSchema);

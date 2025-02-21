@@ -48,6 +48,7 @@ const userSchema = new Schema(
     contactNumber: {
       type: Number,
       default: "",
+      required: true,
     },
     address: {
       type: String,

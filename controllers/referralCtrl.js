@@ -73,15 +73,20 @@ exports.createReferral = async (req, res) => {
       return res.status(400).json({ message: "Invalid userId" });
     }
 
+    // Query the Users collection to get the username
     const user = await Users.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const username = user.username;
-    let urlParts = productUrl.split("?")[0];
-    let path = urlParts.substring(urlParts.indexOf("https://") + 8);
 
+    // Make sure to preserve the entire URL
+    let urlParts = new URL(productUrl); // Using URL constructor ensures we get the full URL
+    let baseUrl = urlParts.origin; // This will give the full domain + protocol (e.g., https://www.example.com)
+    let path = urlParts.pathname; // This will give the path (e.g., /product/123)
+
+    // Generate a unique referral code
     const referralCode = generateReferralCode();
 
     // Check if the referral code already exists
@@ -90,9 +95,10 @@ exports.createReferral = async (req, res) => {
       return res.status(400).json({ message: "Referral code already exists" });
     }
 
-    const referralLink = `https://${path}//${referralCode}`;
+    // Construct the referral link using the full URL (base + path)
+    const referralLink = `${baseUrl}${path}?referralCode=${referralCode}`;
 
-    // Create the new referral
+    // Create the new referral object
     const referral = new Referral({
       userId,
       username,
@@ -111,15 +117,13 @@ exports.createReferral = async (req, res) => {
       message: "Referral created successfully",
       referral,
       referralLink,
-      username, // Return the username in the response
+      username,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creating referral" });
   }
 };
-
-
 
 exports.getReferralsByUserId = async (req, res) => {
   try {
@@ -184,60 +188,62 @@ exports.getAllReferrals = async (req, res) => {
   }
 };
 
-
-
 exports.getReferralByCode = async (req, res) => {
   try {
     const { code } = req.params;
 
-    // Find referral by code
+    // Find the referral by referralCode
     const referral = await Referral.findOne({ referralCode: code });
     if (!referral) {
       return res.status(404).json({ msg: "Referral not found" });
     }
 
     // Increment the clicks field by 1
-    referral.clicks += 1;
-    await referral.save();
+    referral.clicks += 1; // Increment the number of clicks
+    await referral.save(); // Save the updated referral document
 
-    // Fetch the referred product and the user who created the referral
-    const { productId, userId } = referral;
-    const referredProduct = await Product.findById(productId, {
-      productname: 1,
-      description: 1,
-      price: 1,
-      category: 1,
-    });
-    const { productname, description, category, price } = referredProduct; //Object destructuring
-    const productID = referredProduct._id;
+    // Redirect to the product page using the referral link
+    const productUrl = referral.referralLink; // This is the full referral link
 
-    const referredBy = await Users.findById(userId, {
-      fullname: 1,
-      username: 1,
-    });
-    const { fullname, username } = referredBy;
-    const userID = referredBy._id;
-    if (referredProduct) {
-      // Return the updated referral data
-      res.status(200).json({
-        productname,
-        description,
-        category,
-        price,
-        productID,
-        fullname,
-        username,
-        userID,
-
-        clicks: referral.clicks, // Send the updated click count
-      });
-    } else {
-      res.status(404).json({
-        msg: "No product linked with this referral",
-      });
+    if (!productUrl) {
+      return res
+        .status(404)
+        .json({ msg: "No product URL linked with this referral" });
     }
+
+    // Return the updated referral data (you can also return the click count here)
+    res.status(200).json({
+      message: "Referral link clicked",
+      clicks: referral.clicks, // Include the updated clicks count
+      redirectUrl: productUrl, // Return the referral link as a redirect URL
+    });
+
+    // Optionally, you can redirect the user:
+    // res.redirect(productUrl);
   } catch (err) {
     console.error(err);
     res.status(500).send(err);
   }
 };
+
+exports.getReferralClicks = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    // Find the referral by code
+    const referral = await Referral.findOne({ referralCode: code });
+    if (!referral) {
+      return res.status(404).json({ message: "Referral not found" });
+    }
+
+    // Return the clicks count
+    res.status(200).json({
+      referralCode: referral.referralCode,
+      clicks: referral.clicks, // Show the number of clicks
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching referral clicks" });
+  }
+};
+
