@@ -22,7 +22,7 @@ const BrandSchema = new mongoose.Schema(
     },
     contactEmail: {
       type: String,
-      required: false,
+      required: true,
       unique: true,
     },
     brandWebsite: {

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        function upload() {
+            event.preventDefault();
+            let formData = new FormData();
+            formData.append("media", document.querySelector("input[type=file]").files[0]);
+            formData.append("content", document.querySelector("input[name=content]").value);
+            formData.append("caption", document.querySelector("input[name=caption]").value);
+            fetch("http://localhost:5000/api/posts", {
+                method: "POST",
+                body: formData,
+            }).then(res => res.text()).then(res => {
+                console.log(res);
+            }).catch(err => {
+                console.log(err);
+            })
+        }
+    </script>
+</head>
+
+<body>
+    <form method="post" enctype="multipart/form-data" onsubmit="upload(event)">
+        <input type="file" name="media" />
+        <input type="text" name="content" />
+        <input type="text" name="caption" />
+        <input type="submit" value="submit" />
+    </form>
+</body>
+
+</html>
