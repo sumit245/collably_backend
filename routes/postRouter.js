@@ -17,7 +17,7 @@ router.patch("/post/:id/unlike", auth, postCtrl.unLikePost);
 
 router.patch("/post/:id/report", auth, postCtrl.reportPost);
 
-router.get("/user_posts/:id", auth, postCtrl.getUserPosts);  //done
+router.get("/user_posts/:id", auth, postCtrl.getUserPosts);  
 
 router.get("/post_discover", auth, postCtrl.getPostDiscover);
 
