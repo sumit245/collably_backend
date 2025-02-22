@@ -22,7 +22,7 @@ const BrandSchema = new mongoose.Schema(
     },
     contactEmail: {
       type: String,
-      required: false,
+      required: true,
       unique: true,
     },
     brandWebsite: {
@@ -34,9 +34,7 @@ const BrandSchema = new mongoose.Schema(
       required: false,
     },
     socialMediaLinks: {
-      type: Map,
-      of: String,
-      default: {},
+      type: String,
     },
     gstNumber: {
       type: String,

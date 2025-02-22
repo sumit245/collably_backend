@@ -1,11 +1,11 @@
 const Posts = require("../models/postModel");
 const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
+const mongoose = require("mongoose");
 
 const postCtrl = {
   createPost: async (req, res) => {
     try {
-      console.log("Received request:", req.body);
       console.log("Uploaded files:", req.files);
       // Check if files are uploaded
       if (!req.files || req.files.media?.length === 0) {
@@ -26,7 +26,9 @@ const postCtrl = {
 
       // Ensure either images OR video is uploaded, not both
       if (images.length > 0 && video) {
-        return res.status(400).json({ msg: "You can upload either images or a video, not both." });
+        return res
+          .status(400)
+          .json({ msg: "You can upload either images or a video, not both." });
       }
 
       // Extract text data from request
@@ -44,10 +46,10 @@ const postCtrl = {
         content,
         caption,
         body,
-        tags: tags ? tags.split(",") : [], // Convert comma-separated tags to an array
+        tags: tags ? tags.split(",") : [],
         images,
         video,
-        // user: req.user._id,
+        user: req.user._id,
       });
 
       // Save to database
@@ -62,7 +64,9 @@ const postCtrl = {
       });
     } catch (err) {
       console.error("Error creating post:", err);
-      return res.status(500).json({ msg: "Server error. Please try again later." });
+      return res
+        .status(500)
+        .json({ msg: "Server error. Please try again later." });
     }
   },
 
@@ -70,7 +74,7 @@ const postCtrl = {
     try {
       // Yaha se bhi req.user.following hata diya hai isse kisi bhi user ko kisi ka bhi post dikhega aaj submit karke ye params
       // pass kar dena req.user.following and req.user._id wala
-      const posts = await Posts.find()   //user: [...req.user.following, req.user._id],
+      const posts = await Posts.find() //user: [...req.user.following, req.user._id],
         .sort("-createdAt")
         .populate("user likes", "avatar username fullname followers")
         .populate({
@@ -180,45 +184,54 @@ const postCtrl = {
   },
 
   getUserPosts: async (req, res) => {
-  try {
-    const { page = 1, limit = 10 } = req.query; // Default page is 1 and limit is 10
-    const skip = (page - 1) * limit; // Calculate how many posts to skip
+    try {
+      const { page = 1, limit = 10 } = req.query;
+      const skip = (page - 1) * limit;
+      const userId = req.params.id || req.user._id; // Ensure correct userId
 
-    // Fetch posts for the user, apply pagination (skip & limit), and sort by creation date
-    const posts = await Posts.find({ user: req.params.id }) // Find posts for the specific user
-      .sort('-createdAt') // Sort by creation date (newest first)
-      .skip(skip) // Skip the posts for pagination
-      .limit(Number(limit)) // Limit the number of posts per page
+      console.log("Fetching posts for user ID:", userId); // Log user ID for debugging
 
-      // Populate user and likes info for each post
-      .populate("user likes", "avatar username fullname followers")
-      .populate({
-        path: "comments",
-        populate: {
-          path: "user likes",
-          select: "-password",
-        },
+      // Fetch posts for the given user
+      const posts = await Posts.find({ user: userId }) // Match posts with the user ID
+        .sort("-createdAt") // Sort by creation date (most recent first)
+        .skip(skip) // Implement pagination
+        .limit(Number(limit)) // Implement pagination limit
+        .populate("user", "avatar username fullname followers") // Populate user details
+        .populate({
+          path: "comments", // Populate comments with user and likes data
+          populate: {
+            path: "user likes",
+            select: "-password", // Exclude password for privacy
+          },
+        });
+
+      console.log("Fetched posts:", posts); // Log the populated posts to verify the result
+
+      const totalPosts = await Posts.countDocuments({ user: userId });
+
+      res.json({
+        msg: "User posts fetched successfully",
+        posts,
+        totalPosts,
+        totalPages: Math.ceil(totalPosts / limit),
+        currentPage: Number(page),
       });
-
-    // Get the total number of posts for the user (to handle pagination)
-    const totalPosts = await Posts.countDocuments({ user: req.params.id });
-
-    res.json({
-      msg: "User posts fetched successfully",
-      posts,
-      totalPosts, // Include the total number of posts
-      totalPages: Math.ceil(totalPosts / limit), // Total number of pages
-      currentPage: Number(page), // Current page number
-    });
-  } catch (err) {
-    return res.status(500).json({ msg: err.message });
-  }
-},
-
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
 
   getPost: async (req, res) => {
     try {
-      const post = await Posts.findById(req.params.id)
+      const { id } = req.params;
+
+      // Validate the ID
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ msg: "Invalid post ID" });
+      }
+
+      // Fetch the post
+      const post = await Posts.findById(id)
         .populate("user likes", "avatar username fullname followers")
         .populate({
           path: "comments",
@@ -227,6 +240,9 @@ const postCtrl = {
             select: "-password",
           },
         });
+
+      console.log("Post ID:", id);
+      console.log("Fetched Post:", post);
 
       if (!post) {
         return res.status(400).json({ msg: "Post does not exist." });

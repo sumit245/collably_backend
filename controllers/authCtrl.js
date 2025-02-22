@@ -1,8 +1,6 @@
 const Users = require("../models/userModel");
 const bcrypt = require("bcrypt");
-const jwt = require( "jsonwebtoken" );
-const crypto = require( "crypto" ); 
-const twilio = require("twilio");
+const jwt = require("jsonwebtoken");
 const passport = require("../middleware/passport");
 
 

@@ -17,9 +17,12 @@ exports.createBrand = async (req, res) => {
       gstNumber,
       password,
     } = req.body;
-    const brandLogo = req.file ? req.file.path : null;
 
+    // Check if any file is uploaded
+    const brandLogo =
+      req.files && req.files.length > 0 ? req.files[0].path : null;
 
+    // Check if brand email already exists
     const existingBrand = await Brand.findOne({ contactEmail });
     if (existingBrand) {
       return res
@@ -27,10 +30,10 @@ exports.createBrand = async (req, res) => {
         .json({ message: "Email address is already in use" });
     }
 
-    // Create new brand
+    // Create a new brand object
     const brand = new Brand({
       brandName,
-      brandLogo,
+      brandLogo, // Store logo path if uploaded
       brandDescription,
       brandCategory,
       contactEmail,
@@ -41,7 +44,7 @@ exports.createBrand = async (req, res) => {
       password,
     });
 
-
+    // Save the brand to the database
     await brand.save();
     res.status(201).json({ message: "Brand created successfully", brand });
   } catch (err) {
@@ -50,6 +53,7 @@ exports.createBrand = async (req, res) => {
       .json({ message: "Error creating brand", error: err.message });
   }
 };
+
 
 // Login (authenticate brand)
 exports.login = async (req, res) => {
@@ -138,6 +142,8 @@ exports.updateBrand = async (req, res) => {
       socialMediaLinks,
       gstNumber,
     } = req.body;
+
+    // Set updated data
     const updatedData = {
       brandName,
       brandDescription,
@@ -149,16 +155,20 @@ exports.updateBrand = async (req, res) => {
       gstNumber,
     };
 
-    if (req.file) {
-      updatedData.brandLogo = req.file.path;
+    // Check if a new logo is uploaded
+    if (req.files && req.files.length > 0) {
+      updatedData.brandLogo = req.files[0].path; // Save the new logo path
     }
 
+    // Find and update the brand
     const brand = await Brand.findByIdAndUpdate(req.params.id, updatedData, {
-      new: true,
+      new: true, // Return the updated brand
     });
+
     if (!brand) {
       return res.status(404).json({ message: "Brand not found" });
     }
+
     res.status(200).json({ message: "Brand updated successfully", brand });
   } catch (err) {
     res
@@ -166,6 +176,7 @@ exports.updateBrand = async (req, res) => {
       .json({ message: "Error updating brand", error: err.message });
   }
 };
+
 
 // Delete a brand by ID
 exports.deleteBrand = async (req, res) => {
