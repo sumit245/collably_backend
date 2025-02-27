@@ -384,17 +384,16 @@ const postCtrl = {
 
   getSavePost: async (req, res) => {
     try {
-      // Find the user and get their saved post IDs from the 'saved' field
       const user = await Users.findById(req.user._id).select("saved");
 
       if (!user) {
         return res.status(404).json({ msg: "User not found" });
       }
 
-      // Now query the Posts collection to get the saved posts based on the IDs
+    
       const savedPosts = await Posts.find({
-        _id: { $in: user.saved }, // Check if the post IDs are in the 'saved' array
-      }).sort("-createdAt"); // Sort posts by creation date in descending order
+        _id: { $in: user.saved }, 
+      }).sort("-createdAt"); 
 
       res.json({
         savedPosts,
@@ -404,6 +403,7 @@ const postCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  
 };
 
 module.exports = postCtrl;
