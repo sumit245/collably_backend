@@ -1,29 +1,15 @@
 const express = require("express");
-const multer = require("multer");
 const path = require("path");
-const brandController = require("../controllers/brandCtrl");
+const brandController = require( "../controllers/brandCtrl" );
+const upload = require("../middleware/uploadMiddleware");
 const mongoose = require("mongoose");
 
 const router = express.Router();
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/logos");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
 
-const upload = multer({ storage });
-
-router.post(
-  "/createbrand",
-  upload.single("brandLogo"),
-  brandController.createBrand
-);
+router.post("/createbrand", upload, brandController.createBrand);
 
 router.post("/brandlogin", brandController.login);
 router.get("/brands", brandController.getAllBrands);
@@ -31,7 +17,7 @@ router.get("/brand/:id", brandController.getBrandById);
 
 router.put(
   "/brands/:id",
-  upload.single("brandLogo"),
+  upload,
   (req, res, next) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) {

@@ -18,7 +18,7 @@ const userSchema = new Schema(
     email: {
       type: String,
       trim: true,
-      // unique: true,
+      unique: true,
     },
     password: {
       type: String,
@@ -48,8 +48,11 @@ const userSchema = new Schema(
     contactNumber: {
       type: String,
       default: "",
-      required: true,
+      required: function () {
+        return this.role === "user";
+      },
     },
+
     address: {
       type: String,
       default: "",
