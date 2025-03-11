@@ -1,6 +1,6 @@
 const express = require("express");
 const path = require("path");
-const brandController = require("../controllers/BrandCtrl");
+const brandController = require("../controllers/brandController");
 const upload = require("../middleware/uploadMiddleware");
 const mongoose = require("mongoose");
 
