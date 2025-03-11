@@ -173,7 +173,7 @@ exports.getAllReferrals = async (req, res) => {
   try {
   
     const referrals = await Referral.find()
-      .populate("userId", "username") 
+      .populate("userId", "fullname") 
       .exec(); // Execute the query
 
     if (referrals.length === 0) {

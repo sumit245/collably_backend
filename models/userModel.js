@@ -18,7 +18,7 @@ const userSchema = new Schema(
     email: {
       type: String,
       trim: true,
-      // unique: true,
+      unique: true,
     },
     password: {
       type: String,
@@ -46,7 +46,7 @@ const userSchema = new Schema(
       default: "male",
     },
     contactNumber: {
-      type: String,
+      type: Number,
       default: "",
       required: function () {
         return this.role === "user";
@@ -84,7 +84,7 @@ const userSchema = new Schema(
         ref: "user",
       },
     ],
-    // Referral Fields:
+
     referralCode: {
       type: String,
       unique: true,
