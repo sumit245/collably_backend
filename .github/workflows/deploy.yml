@@ -27,6 +27,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd /var/vhost/collably_backend/
             sudo git pull origin main
-            pm2 restart all
+            sudo pm2 restart all
             sudo service nginx restart
           EOF
