@@ -16,7 +16,7 @@ const app = express();
 app.use(cors(corsOptions));
 app.use(express.json());
 app.options("*", cors(corsOptions));
-// app.use(cors(corsOptions));
+// app.use(cors(corsOptions)); 
 app.use(cookieParser());
 app.use(
   session({
@@ -26,6 +26,8 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static("uploads"));
+
 //#region // !Socket
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);

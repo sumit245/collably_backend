@@ -14,41 +14,41 @@ const authCtrl = {
       failureRedirect: "/auth/google",
     })(req, res, async () => {
       console.log("Google user data:", req);
-      // try {
-      //   const { email, name, id } = req.user;
+      try {
+        const { email, name, id } = req.user;
 
-      //   let user = await Users.findOne({ email });
-      //   if (!user) {
-      //     user = new Users({
-      //       fullname: name,
-      //       username: name.toLowerCase(),
-      //       email,
-      //       password: "",
-      //       googleId: id,
-      //     });
-      //     await user.save();
-      //   }
+        let user = await Users.findOne({ email });
+        if (!user) {
+          user = new Users({
+            fullname: name,
+            username: name.toLowerCase(),
+            email,
+            password: "",
+            googleId: id,
+          });
+          await user.save();
+        }
 
-      //   const access_token = createAccessToken({ id: user._id });
-      //   const refresh_token = createRefreshToken({ id: user._id });
+        const access_token = createAccessToken({ id: user._id });
+        const refresh_token = createRefreshToken({ id: user._id });
 
-      //   res.cookie("refreshtoken", refresh_token, {
-      //     httpOnly: true,
-      //     path: "/api/refresh_token",
-      //     maxAge: 30 * 24 * 60 * 60 * 1000,
-      //   });
+        res.cookie("refreshtoken", refresh_token, {
+          httpOnly: true,
+          path: "/api/refresh_token",
+          maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
 
-      //   res.json({
-      //     msg: "Login Successful!",
-      //     access_token,
-      //     user: {
-      //       ...user._doc,
-      //       password: "",
-      //     },
-      //   });
-      // } catch (err) {
-      //   return res.status(500).json({ msg: err.message });
-      // }
+        res.json({
+          msg: "Login Successful!",
+          access_token,
+          user: {
+            ...user._doc,
+            password: "",
+          },
+        });
+      } catch (err) {
+        return res.status(500).json({ msg: err.message });
+      }
     });
   },
 

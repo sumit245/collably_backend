@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const JWT_SECRET = "your_jwt_secret_key";
 
-
 exports.createBrand = async (req, res) => {
   try {
     const {
@@ -54,7 +53,6 @@ exports.createBrand = async (req, res) => {
   }
 };
 
-
 // Login (authenticate brand)
 exports.login = async (req, res) => {
   try {
@@ -98,7 +96,6 @@ exports.login = async (req, res) => {
   }
 };
 
-
 // Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
@@ -111,7 +108,6 @@ exports.getAllBrands = async (req, res) => {
       .json({ message: "Error fetching brands", error: err.message });
   }
 };
-
 
 // Get a single brand by ID
 exports.getBrandById = async (req, res) => {
@@ -128,7 +124,6 @@ exports.getBrandById = async (req, res) => {
       .json({ message: "Error fetching brand", error: err.message });
   }
 };
-
 
 // Update a brand by ID
 exports.updateBrand = async (req, res) => {
@@ -177,7 +172,6 @@ exports.updateBrand = async (req, res) => {
       .json({ message: "Error updating brand", error: err.message });
   }
 };
-
 
 // Delete a brand by ID
 exports.deleteBrand = async (req, res) => {

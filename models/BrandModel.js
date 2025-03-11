@@ -33,9 +33,8 @@ const BrandSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
-    socialMediaLinks: {
-      type: String,
-    },
+    socialMediaLinks: [ String ],
+    
     gstNumber: {
       type: String,
       required: false,
