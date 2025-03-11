@@ -1,6 +1,7 @@
-const Brand = require("../models/brandModel");
+const Brand = require("../models/BrandModel");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = "your_jwt_secret_key";
+require("dotenv").config();
+const JWT_SECRET = process.env.JWT_TOKEN;
 
 
 exports.createBrand = async (req, res) => {
@@ -14,7 +15,7 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password, 
+      password,
     } = req.body;
 
     // Check if any file is uploaded
@@ -40,7 +41,7 @@ exports.createBrand = async (req, res) => {
       brandPhoneNumber,
       socialMediaLinks,
       gstNumber,
-      password, 
+      password,
     });
 
     // Save the brand to the database
