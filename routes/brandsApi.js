@@ -1,6 +1,6 @@
 const express = require("express");
 const path = require("path");
-const brandController = require( "../controllers/brandCtrl" );
+const brandController = require("../controllers/brandController");
 const upload = require("../middleware/uploadMiddleware");
 const mongoose = require("mongoose");
 
@@ -30,7 +30,7 @@ router.put(
   brandController.updateBrand
 );
 
-router.delete("/brands/:id", (req, res, next) => {
+router.delete("/brand/:id", (req, res, next) => {
   const { id } = req.params;
   if (!isValidObjectId(id)) {
     return res.status(400).json({ message: "Invalid ObjectId format" });

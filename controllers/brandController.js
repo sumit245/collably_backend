@@ -1,7 +1,7 @@
-const Brand = require("../models/brandModel");
+const Brand = require("../models/BrandModel");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const JWT_SECRET = "your_jwt_secret_key";
+require("dotenv").config();
+const JWT_SECRET = process.env.JWT_TOKEN;
 
 exports.createBrand = async (req, res) => {
   try {
@@ -99,6 +99,7 @@ exports.login = async (req, res) => {
 // Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
+    console.log("Request:", req.params); // Add logging here
     const brands = await Brand.find();
     res.status(200).json(brands);
   } catch (err) {

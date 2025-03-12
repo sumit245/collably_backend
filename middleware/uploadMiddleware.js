@@ -1,6 +1,18 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+require('dotenv').config();
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const multerS3 = require("multer-s3");
+
+// AWS S3 Configuration
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
+});
 
 // Ensure upload folders exist
 const ensureUploadFolderExists = (folder) => {
@@ -58,5 +70,21 @@ const uploadMiddleware = (req, res, next) => {
     next(); // Proceed if no errors
   });
 };
+
+//modify the code now to take directory name and file name as argument and then return the path to api
+// so that api can save the complete path to mongodb
+const uploadToS3 = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_BUCKET_NAME,
+    metadata: (req, file, cb) => {
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: (req, file, cb) => {
+      cb(null, `uploads/${Date.now()}-${file.originalname}`);
+    }
+  })
+});
+
 
 module.exports = uploadMiddleware;

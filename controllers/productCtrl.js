@@ -3,16 +3,16 @@ const mongoose = require("mongoose");
 
 exports.createProduct = async (req, res) => {
   try {
-    const { brandid, productname, description, price, quantity, category } =
+    const { brandId, productname, description, price, quantity, category } =
       req.body;
 
     // Validate that brand is an ObjectId
-    if (!mongoose.Types.ObjectId.isValid(brandid)) {
+    if (!mongoose.Types.ObjectId.isValid(brandId)) {
       return res.status(400).json({ error: "Invalid brand ID" });
     }
 
     const product = new Product({
-      brandid,
+      brandId,
       productname,
       description,
       price,
@@ -65,18 +65,33 @@ exports.getProducts = async (req, res) => {
 exports.getBrandProducts = async (req, res) => {
   try {
     const { brandId } = req.query;
+
+
     if (!brandId || !mongoose.Types.ObjectId.isValid(brandId)) {
       return res.status(400).json({ error: "Invalid or missing brand ID" });
     }
-    const products = await Product.find({ brandId })
-      .skip((req.query.page - 1) * req.query.limit)
-      .limit(parseInt(req.query.limit));
 
+   
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+ 
+    console.log('Page:', page);
+    console.log('Limit:', limit);
+
+   
+    const products = await Product.find({ brandId })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+   
     res.status(200).json(products);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
+
 
 exports.getProductById = async (req, res) => {
   try {
