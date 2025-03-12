@@ -38,6 +38,17 @@ const storage = multer.diskStorage({
   },
 });
 
+const s3Storage = multerS3({
+  s3: s3,
+  bucket: process.env.AWS_BUCKET_NAME,
+  metadata: (req, file, cb) => {
+    cb(null, { fieldName: file.fieldname });
+  },
+  key: (req, file, cb) => {
+    cb(null, `uploads/${Date.now()}-${file.originalname}`);
+  }
+})
+
 // File filter: Allow only images and videos
 const fileFilter = (req, file, cb) => {
   if (!file) {
@@ -59,7 +70,7 @@ const upload = multer({
 
 // Middleware wrapper to catch errors
 const uploadMiddleware = (req, res, next) => {
-  upload(req, res, (err) => {
+  uploadToS3(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       // Multer-specific errors (e.g., unexpected field, too many files)
       return res.status(400).json({ error: `Multer error: ${err.message}` });
@@ -74,17 +85,11 @@ const uploadMiddleware = (req, res, next) => {
 //modify the code now to take directory name and file name as argument and then return the path to api
 // so that api can save the complete path to mongodb
 const uploadToS3 = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    metadata: (req, file, cb) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: (req, file, cb) => {
-      cb(null, `uploads/${Date.now()}-${file.originalname}`);
-    }
-  })
-});
+  storage: s3Storage,
+  fileFilter,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+}).array("media", 5);
 
 
 module.exports = uploadMiddleware;
+// default export 
