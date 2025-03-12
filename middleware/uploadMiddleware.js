@@ -1,52 +1,43 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-require('dotenv').config();
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const multerS3 = require("multer-s3");
+const AWS = require("aws-sdk");
+const path = require("path");
 
-// AWS S3 Configuration
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
+// Set up AWS S3 configuration
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_DEFAULT_REGION,
 });
 
-// Ensure upload folders exist
-const ensureUploadFolderExists = (folder) => {
-  if (!fs.existsSync(folder)) {
-    fs.mkdirSync(folder, { recursive: true }); // Create folder if it doesn't exist
-  }
-};
-
-// Configure storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (!file) {
-      return cb(new Error("No file provided"), false);
-    }
-
-    const folder = file.mimetype.startsWith("image/") ? "uploads/images" : "uploads/videos";
-    console.log("Uploaded file:", file.originalname);
-    ensureUploadFolderExists(folder); // Ensure folder exists
-    cb(null, folder);
+// Configure multer storage to upload directly to S3
+const storage = multerS3({
+  s3: s3,
+  bucket: process.env.AWS_BUCKET, // Your S3 Bucket name
+  acl: "public-read",
+  metadata: (req, file, cb) => {
+    cb(null, { fieldName: file.fieldname });
   },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+  key: (req, file, cb) => {
+    // Generate a unique key for the file in S3
+    const fileExtension = path.extname(file.originalname);
+    const uniqueKey = Date.now() + fileExtension; // Ensuring the file name is unique
+    cb(null, `media/${uniqueKey}`);
   },
 });
 
-// File filter: Allow only images and videos
+// File filter to only allow image/video files
 const fileFilter = (req, file, cb) => {
-  if (!file) {
-    return cb(new Error("No file uploaded"), false);
-  }
-  if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
+  if (
+    file.mimetype.startsWith("image/") ||
+    file.mimetype.startsWith("video/")
+  ) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only images and videos are allowed."), false);
+    cb(
+      new Error("Invalid file type. Only images and videos are allowed."),
+      false
+    );
   }
 };
 
@@ -70,21 +61,5 @@ const uploadMiddleware = (req, res, next) => {
     next(); // Proceed if no errors
   });
 };
-
-//modify the code now to take directory name and file name as argument and then return the path to api
-// so that api can save the complete path to mongodb
-const uploadToS3 = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    metadata: (req, file, cb) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: (req, file, cb) => {
-      cb(null, `uploads/${Date.now()}-${file.originalname}`);
-    }
-  })
-});
-
 
 module.exports = uploadMiddleware;

@@ -3,6 +3,8 @@ const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
 const mongoose = require("mongoose");
 
+
+
 const postCtrl = {
   createPost: async (req, res) => {
     try {
@@ -183,7 +185,7 @@ const postCtrl = {
     }
   },
 
-  getUserPosts: async (req, res) => {
+  getUserPosts: async (req, res) =>
     try {
       const { page = 1, limit = 10 } = req.query;
       const skip = (page - 1) * limit;
@@ -390,10 +392,9 @@ const postCtrl = {
         return res.status(404).json({ msg: "User not found" });
       }
 
-    
       const savedPosts = await Posts.find({
-        _id: { $in: user.saved }, 
-      }).sort("-createdAt"); 
+        _id: { $in: user.saved },
+      }).sort("-createdAt");
 
       res.json({
         savedPosts,
@@ -403,7 +404,6 @@ const postCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-  
 };
 
 module.exports = postCtrl;
