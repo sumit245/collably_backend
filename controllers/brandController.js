@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const JWT_SECRET = process.env.JWT_TOKEN;
 
-
 exports.createBrand = async (req, res) => {
   try {
     const { contactEmail } = req.body;
@@ -32,7 +31,6 @@ exports.createBrand = async (req, res) => {
       .json({ message: "Error creating brand", error: err.message });
   }
 };
-
 
 // Login (authenticate brand)
 exports.login = async (req, res) => {
@@ -77,7 +75,6 @@ exports.login = async (req, res) => {
   }
 };
 
-
 // Get all brands
 exports.getAllBrands = async (req, res) => {
   try {
@@ -90,7 +87,6 @@ exports.getAllBrands = async (req, res) => {
       .json({ message: "Error fetching brands", error: err.message });
   }
 };
-
 
 // Get a single brand by ID
 exports.getBrandById = async (req, res) => {
@@ -107,7 +103,6 @@ exports.getBrandById = async (req, res) => {
       .json({ message: "Error fetching brand", error: err.message });
   }
 };
-
 
 // Update a brand by ID
 exports.updateBrand = async (req, res) => {
@@ -156,7 +151,6 @@ exports.updateBrand = async (req, res) => {
       .json({ message: "Error updating brand", error: err.message });
   }
 };
-
 
 // Delete a brand by ID
 exports.deleteBrand = async (req, res) => {
