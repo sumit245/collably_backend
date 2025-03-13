@@ -1,0 +1,32 @@
+// Ensure upload folders exist
+// const ensureUploadFolderExists = (folder) => {
+//   if (!fs.existsSync(folder)) {
+//     fs.mkdirSync(folder, { recursive: true }); // Create folder if it doesn't exist
+//   }
+// };
+
+// Configure storage
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     if (!file) {
+//       return cb(new Error("No file provided"), false);
+//     }
+
+//     const folder = file.mimetype.startsWith("image/") ? "uploads/images" : "uploads/videos";
+//     console.log("Uploaded file:", file.originalname);
+//     ensureUploadFolderExists(folder); // Ensure folder exists
+//     cb(null, folder);
+//   },
+//   filename: (req, file, cb) => {
+//     cb(null, Date.now() + path.extname(file.originalname));
+//   },
+// });
+
+// Multer configuration for multiple file uploads (max 5 files)
+// const upload = multer({
+//   storage,
+//   fileFilter,
+//   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+// }).array("media", 5); // Accepts multiple images or one video under "media"
+
+// README: Uncomment the above code if you want to use local file uploads

@@ -6,21 +6,11 @@ const JWT_SECRET = process.env.JWT_TOKEN;
 
 exports.createBrand = async (req, res) => {
   try {
-    const {
-      brandName,
-      brandDescription,
-      brandCategory,
-      contactEmail,
-      brandWebsite,
-      brandPhoneNumber,
-      socialMediaLinks,
-      gstNumber,
-      password,
-    } = req.body;
+    const { contactEmail } = req.body;
 
     // Check if any file is uploaded
     const brandLogo =
-      req.files && req.files.length > 0 ? req.files[0].path : null;
+      req.files && req.files.length > 0 ? req.media : null;
 
     // Check if brand email already exists
     const existingBrand = await Brand.findOne({ contactEmail });
@@ -31,18 +21,7 @@ exports.createBrand = async (req, res) => {
     }
 
     // Create a new brand object
-    const brand = new Brand({
-      brandName,
-      brandLogo, // Store logo path if uploaded
-      brandDescription,
-      brandCategory,
-      contactEmail,
-      brandWebsite,
-      brandPhoneNumber,
-      socialMediaLinks,
-      gstNumber,
-      password,
-    });
+    const brand = new Brand({ ...req.body, brandLogo });
 
     // Save the brand to the database
     await brand.save();

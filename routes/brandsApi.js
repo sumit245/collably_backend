@@ -9,7 +9,7 @@ const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 
-router.post("/createbrand", upload, brandController.createBrand);
+router.post("/createbrand", upload('brands'), brandController.createBrand);
 
 
 router.post("/brandlogin", brandController.login);
@@ -19,7 +19,7 @@ router.get("/brand/:id", brandController.getBrandById);
 
 router.put(
   "/brands/:id",
-  upload,
+  upload('brands'),
   (req, res, next) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) {

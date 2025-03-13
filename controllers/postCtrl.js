@@ -6,41 +6,22 @@ const mongoose = require("mongoose");
 const postCtrl = {
   createPost: async (req, res) => {
     try {
-      console.log("Uploaded files:", req.files);
-      // Check if files are uploaded
-      if (!req.files || req.files.media?.length === 0) {
+      if (!req.files) {
         return res.status(400).json({ msg: "Please add an image or a video." });
       }
-
       let images = [];
       let video = null;
 
       // Determine if uploaded media is images or a video
       req.files.forEach((file) => {
         if (file.mimetype.startsWith("image/")) {
-          images.push(file.path);
+          images.push(file.location);
         } else if (file.mimetype.startsWith("video/")) {
-          video = file.path;
+          video = file.location;
         }
       });
-
-      // Ensure either images OR video is uploaded, not both
-      if (images.length > 0 && video) {
-        return res
-          .status(400)
-          .json({ msg: "You can upload either images or a video, not both." });
-      }
-
       // Extract text data from request
       const { content, caption, body, tags } = req.body;
-      console.log("Extracted data:", { content, caption, body, tags });
-
-      // Check if the model is properly defined
-      // if (!global.Posts) {
-      //   console.error("Posts model is not defined!");
-      //   return res.status(500).json({ msg: "Server error: Model not found." });
-      // }
-
       // Create a new post
       const newPost = new Posts({
         content,
@@ -51,10 +32,8 @@ const postCtrl = {
         video,
         user: req.user._id,
       });
-
       // Save to database
       await newPost.save();
-
       return res.json({
         msg: "Post created successfully.",
         newPost: {

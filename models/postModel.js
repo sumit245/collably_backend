@@ -7,7 +7,7 @@ const postSchema = new Schema(
     caption: { type: String },
     body: { type: String },
     tags: [{ type: String }],
-    images: [{ type: String }], // Array of image paths
+    images: [{ type: Array }], // Array of image paths
     video: { type: String }, // Single video path
     likes: [
       {
