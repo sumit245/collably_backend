@@ -52,11 +52,11 @@ const upload = multer({
 const uploadMiddleware = (req, res, next) => {
   upload(req, res, (err) => {
     if (err instanceof multer.MulterError) {
-      // Multer-specific errors (e.g., unexpected field, too many files)
+      console.error("Multer error:", err);
       return res.status(400).json({ error: `Multer error: ${err.message}` });
     } else if (err) {
-      // Other errors (e.g., invalid file type, no file uploaded)
-      return res.status(400).json({ error: err.message });
+      console.error("S3 Upload Error:", err);
+      return res.status(500).json({ error: `S3 upload error: ${err.message}` });
     }
     next(); // Proceed if no errors
   });

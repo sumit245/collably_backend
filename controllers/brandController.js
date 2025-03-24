@@ -17,9 +17,13 @@ exports.createBrand = async (req, res) => {
       password,
     } = req.body;
 
-    // Check if any file is uploaded
-    const brandLogo =
-      req.files && req.files.length > 0 ? req.files[0].path : null;
+    // Handle file upload (multiple files for media)
+    const uploadedFiles = req.files;
+    let brandLogo = null;
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      // If files are uploaded, use the first file as the brand logo
+      brandLogo = uploadedFiles[0].location;
+    }
 
     // Check if brand email already exists
     const existingBrand = await Brand.findOne({ contactEmail });
@@ -32,7 +36,7 @@ exports.createBrand = async (req, res) => {
     // Create a new brand object
     const brand = new Brand({
       brandName,
-      brandLogo, // Store logo path if uploaded
+      brandLogo, // Store the first file URL as brand logo
       brandDescription,
       brandCategory,
       contactEmail,
@@ -52,6 +56,7 @@ exports.createBrand = async (req, res) => {
       .json({ message: "Error creating brand", error: err.message });
   }
 };
+
 
 // Login (authenticate brand)
 exports.login = async (req, res) => {
