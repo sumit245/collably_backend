@@ -20,10 +20,19 @@ exports.createBrand = async (req, res) => {
     // Handle file upload (multiple files for media)
     const uploadedFiles = req.files;
     let brandLogo = null;
-    if (uploadedFiles && uploadedFiles.length > 0) {
-      // If files are uploaded, use the first file as the brand logo
-      brandLogo = uploadedFiles[0].location;
-    }
+    // if (uploadedFiles && uploadedFiles.length > 0) {
+    //   // If files are uploaded, use the first file as the brand logo
+    //   brandLogo = uploadedFiles[0].location;
+    // }
+
+     if (
+       uploadedFiles &&
+       uploadedFiles.brandLogo &&
+       uploadedFiles.brandLogo.length > 0
+     ) {
+       // If the brandLogo file is uploaded, get its S3 location
+       brandLogo = uploadedFiles.brandLogo[0].location; // Assuming it's uploaded to S3
+     }
 
     // Check if brand email already exists
     const existingBrand = await Brand.findOne({ contactEmail });

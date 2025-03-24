@@ -46,7 +46,12 @@ const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
-}).array("media", 5); // Accepts multiple images or one video under "media"
+})
+  // .array( "media", 5 ); // Accepts multiple images or one video under "media"
+  .fields([
+    { name: "media", maxCount: 5 }, // Multiple files for general media
+    { name: "brandLogo", maxCount: 1 }, // Single file for brand logo
+  ]); 
 
 // Middleware wrapper to catch errors
 const uploadMiddleware = (req, res, next) => {
