@@ -139,7 +139,7 @@ exports.getReferralsByBrandId = async (req, res) => {
     //     .json({ message: "No referrals found for this Brand" });
     // }
 
-    res.status(200).json(referrals.length ? referrals : []);
+    res.status(200).json(referrals.length ?  referrals : []);
   } catch (error) {
     console.error("Error fetching referrals:", error);
     res.status(500).json({ message: "Error fetching referrals for the Brand" });
