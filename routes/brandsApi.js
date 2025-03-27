@@ -1,12 +1,18 @@
 const express = require("express");
 const path = require("path");
-const brandController = require( "../controllers/brandCtrl" );
+const brandController = require("../controllers/brandController");
 const upload = require("../middleware/uploadMiddleware");
 const mongoose = require("mongoose");
 
 const router = express.Router();
 
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+const validateObjectId = (req, res, next) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid ObjectId format" });
+  }
+  next();
+};
 
 
 router.post("/createbrand", upload, brandController.createBrand);

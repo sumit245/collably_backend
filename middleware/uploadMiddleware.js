@@ -1,40 +1,43 @@
 const multer = require("multer");
+const multerS3 = require("multer-s3");
+const AWS = require("aws-sdk");
 const path = require("path");
-const fs = require("fs");
 
-// Ensure upload folders exist
-const ensureUploadFolderExists = (folder) => {
-  if (!fs.existsSync(folder)) {
-    fs.mkdirSync(folder, { recursive: true }); // Create folder if it doesn't exist
-  }
-};
+// Set up AWS S3 configuration
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_DEFAULT_REGION,
+});
 
-// Configure storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (!file) {
-      return cb(new Error("No file provided"), false);
-    }
-
-    const folder = file.mimetype.startsWith("image/") ? "uploads/images" : "uploads/videos";
-    console.log("Uploaded file:", file.originalname);
-    ensureUploadFolderExists(folder); // Ensure folder exists
-    cb(null, folder);
+// Configure multer storage to upload directly to S3
+const storage = multerS3({
+  s3: s3,
+  bucket: process.env.AWS_BUCKET, // Your S3 Bucket name
+  acl: "public-read",
+  metadata: (req, file, cb) => {
+    cb(null, { fieldName: file.fieldname });
   },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+  key: (req, file, cb) => {
+    // Generate a unique key for the file in S3
+    const fileExtension = path.extname(file.originalname);
+    const uniqueKey = Date.now() + fileExtension; // Ensuring the file name is unique
+    cb(null, `media/${uniqueKey}`);
   },
 });
 
-// File filter: Allow only images and videos
+// File filter to only allow image/video files
 const fileFilter = (req, file, cb) => {
-  if (!file) {
-    return cb(new Error("No file uploaded"), false);
-  }
-  if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
+  if (
+    file.mimetype.startsWith("image/") ||
+    file.mimetype.startsWith("video/")
+  ) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only images and videos are allowed."), false);
+    cb(
+      new Error("Invalid file type. Only images and videos are allowed."),
+      false
+    );
   }
 };
 
@@ -43,17 +46,22 @@ const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
-}).array("media", 5); // Accepts multiple images or one video under "media"
+})
+  // .array( "media", 5 ); // Accepts multiple images or one video under "media"
+  .fields([
+    { name: "media", maxCount: 5 }, // Multiple files for general media
+    { name: "brandLogo", maxCount: 1 }, // Single file for brand logo
+  ]); 
 
 // Middleware wrapper to catch errors
 const uploadMiddleware = (req, res, next) => {
   upload(req, res, (err) => {
     if (err instanceof multer.MulterError) {
-      // Multer-specific errors (e.g., unexpected field, too many files)
+      console.error("Multer error:", err);
       return res.status(400).json({ error: `Multer error: ${err.message}` });
     } else if (err) {
-      // Other errors (e.g., invalid file type, no file uploaded)
-      return res.status(400).json({ error: err.message });
+      console.error("S3 Upload Error:", err);
+      return res.status(500).json({ error: `S3 upload error: ${err.message}` });
     }
     next(); // Proceed if no errors
   });
