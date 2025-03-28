@@ -66,19 +66,6 @@ const orderCtrl = {
   // Get orders by product's brand
   getBrandOrders: async (req, res) => {
     try {
-      // Fetch all orders with product populated and user populated for fullname
-      const orders = await Order.find()
-        .populate({
-          path: "items.product",
-          select: "brandId productname price",
-        })
-        .populate({
-          path: "user", // Populate the user field to get fullname
-          select: "fullname", // Fetch the fullname from the User model
-        });
-
-      console.log("Fetched Orders: ", orders); // Check the orders data
-
       // Filter orders where the product's brandId matches the brandId passed in the URL
       const filteredOrders = orders.filter((order) =>
         order.items.some(
@@ -86,6 +73,27 @@ const orderCtrl = {
             item.product &&
             item.product.brandId &&
             item.product.brandId.toString() === req.params.brandId
+        ))
+
+      const brandId = req.params.brandId;
+
+
+      const orders = await Order.find().populate({
+        path: "items.product", // Populate product in items
+        match: { brand: brandId }, // Ensure only products from the specific brand are included
+        populate: { path: "brand", select: "name" }, // Populate brand
+      });
+
+      // Log orders for debugging
+      console.log("Fetched Orders:", orders);
+
+      // Filter orders for that brand
+      const brandOrders = orders.filter((order) =>
+        order.items.some(
+          (item) =>
+            item.product &&
+            item.product.brand &&
+            item.product.brand._id.toString() === brandId
         )
       );
 

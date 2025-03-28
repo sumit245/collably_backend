@@ -10,13 +10,12 @@ const corsOptions = {
   Credential: "true",
   origin: "*",
 };
-
 const app = express();
 
 app.use(cors(corsOptions));
 app.use(express.json());
 app.options("*", cors(corsOptions));
-// app.use(cors(corsOptions)); 
+// app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(
   session({
@@ -25,8 +24,6 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
-
-app.use("/uploads", express.static("uploads"));
 
 //#region // !Socket
 const http = require("http").createServer(app);
@@ -49,7 +46,7 @@ app.use("/api", require("./routes/messageRouter"));
 app.use("/api", require("./routes/productRouter"));
 app.use("/api", require("./routes/referralRouter"));
 app.use("/api", require("./routes/orderRouter"));
-app.use("/api", require("./routes/brandsApi"));
+app.use("/api", require("./routes/brandRouter"));
 //#endregion
 
 // Passport setup
@@ -69,7 +66,6 @@ mongoose
   });
 
 const port = process.env.PORT || 5000;
-
-app.listen(port, () => {
+http.listen(port, () => {
   console.log("Listening on ", port);
 });

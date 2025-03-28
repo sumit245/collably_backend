@@ -3,12 +3,14 @@ const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
 const mongoose = require("mongoose");
 
+
 const postCtrl = {
-  createPost: async (req, res) => {
+   createPost: async (req, res) => {
     try {
       console.log("Uploaded files:", req.files);
+
       // Check if files are uploaded
-      if (!req.files || req.files.media?.length === 0) {
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({ msg: "Please add an image or a video." });
       }
 
@@ -18,9 +20,9 @@ const postCtrl = {
       // Determine if uploaded media is images or a video
       req.files.forEach((file) => {
         if (file.mimetype.startsWith("image/")) {
-          images.push(file.path);
+          images.push(file.location); // S3 URL
         } else if (file.mimetype.startsWith("video/")) {
-          video = file.path;
+          video = file.location; // S3 URL
         }
       });
 
@@ -35,12 +37,6 @@ const postCtrl = {
       const { content, caption, body, tags } = req.body;
       console.log("Extracted data:", { content, caption, body, tags });
 
-      // Check if the model is properly defined
-      // if (!global.Posts) {
-      //   console.error("Posts model is not defined!");
-      //   return res.status(500).json({ msg: "Server error: Model not found." });
-      // }
-
       // Create a new post
       const newPost = new Posts({
         content,
@@ -49,7 +45,7 @@ const postCtrl = {
         tags: tags ? tags.split(",") : [],
         images,
         video,
-        user: req.user._id,
+        user: req.user._id,  // Assuming you have a `user` in req.user (JWT/Authentication)
       });
 
       // Save to database
@@ -57,24 +53,17 @@ const postCtrl = {
 
       return res.json({
         msg: "Post created successfully.",
-        newPost: {
-          ...newPost._doc,
-          // user: req.user,
-        },
+        newPost,
       });
     } catch (err) {
       console.error("Error creating post:", err);
-      return res
-        .status(500)
-        .json({ msg: "Server error. Please try again later." });
+      return res.status(500).json({ msg: "Server error. Please try again later." });
     }
   },
 
   getPosts: async (req, res) => {
     try {
-      // Yaha se bhi req.user.following hata diya hai isse kisi bhi user ko kisi ka bhi post dikhega aaj submit karke ye params
-      // pass kar dena req.user.following and req.user._id wala
-      const posts = await Posts.find() //user: [...req.user.following, req.user._id],
+      const posts = await Posts.find()
         .sort("-createdAt")
         .populate("user likes", "avatar username fullname followers")
         .populate({
@@ -187,13 +176,13 @@ const postCtrl = {
     try {
       const { page = 1, limit = 10 } = req.query;
       const skip = (page - 1) * limit;
-      const userId = req.params.id || req.user._id; // Ensure correct userId
+      const userId = req.params.id || req.user._id;
 
-      console.log("Fetching posts for user ID:", userId); // Log user ID for debugging
+      console.log("Fetching posts for user ID:", userId);
 
       // Fetch posts for the given user
-      const posts = await Posts.find({ user: userId }) // Match posts with the user ID
-        .sort("-createdAt") // Sort by creation date (most recent first)
+      const posts = await Posts.find({ user: userId })
+        .sort("-createdAt")
         .skip(skip) // Implement pagination
         .limit(Number(limit)) // Implement pagination limit
         .populate("user", "avatar username fullname followers") // Populate user details
@@ -390,10 +379,9 @@ const postCtrl = {
         return res.status(404).json({ msg: "User not found" });
       }
 
-    
       const savedPosts = await Posts.find({
-        _id: { $in: user.saved }, 
-      }).sort("-createdAt"); 
+        _id: { $in: user.saved },
+      }).sort("-createdAt");
 
       res.json({
         savedPosts,
@@ -403,7 +391,6 @@ const postCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-  
 };
 
 module.exports = postCtrl;
