@@ -146,6 +146,49 @@ exports.getReferralsByBrandId = async (req, res) => {
   }
 };
 
+exports.getReferralsByUserAndBrand = async (req, res) => {
+  try {
+    const { userId, brandId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(brandId)) {
+      return res.status(400).json({ message: "Invalid userId or brandId" });
+    }
+
+    const referrals = await Referral.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      brandId: new mongoose.Types.ObjectId(brandId),
+    }).populate("userId", "fullname");
+
+    res.status(200).json(referrals.length ? referrals : []);
+  } catch (error) {
+    console.error("Error fetching referrals:", error);
+    res.status(500).json({ message: "Error fetching referrals for the user and brand" });
+  }
+};
+
+exports.getUsersByBrandId = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(brandId)) {
+      return res.status(400).json({ message: "Invalid brandId" });
+    }
+
+    const referrals = await Referral.find({ brandId: new mongoose.Types.ObjectId(brandId) })
+      .populate("userId", "fullname email role" ) // Fetch user details
+      .exec();
+
+    // Extract unique users from referrals
+    const uniqueUsers = [...new Map(referrals.map(ref => [ref.userId._id.toString(), ref.userId])).values()];
+
+    res.status(200).json(uniqueUsers);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Error fetching users for the brand" });
+  }
+};
+
+
 exports.getReferralByName = async (req, res) => {
   try {
     const referrals = await Referral.find({
