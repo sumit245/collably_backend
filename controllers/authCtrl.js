@@ -274,80 +274,96 @@ const authCtrl = {
     }
   },
 
-  generateOTP: async (req, res) => {
-    try {
-      const { contactNumber } = req.body;
+//otp generation api 
+generateOTP: async (req, res) => {
+  try {
+    const { contactNumber } = req.body;
 
-      const user = await Users.findOne({ contactNumber, role: "user" });
-      if (!user) {
-        return res.status(400).json({ msg: "Contact number is not registered." });
+    // Check if user exists (but don't return error if not)
+    const user = await Users.findOne({ contactNumber, role: "user" });
+    const userExists = !!user;
+
+    const existingOTP = await OTP.findOne({ contactNumber });
+
+    if (existingOTP) {
+      const timeSinceLastOTP = Date.now() - existingOTP.createdAt.getTime();
+      if (timeSinceLastOTP < RESEND_OTP_WAIT_TIME) {
+        return res.status(400).json({ msg: "Please wait before requesting a new OTP." });
       }
-
-      const existingOTP = await OTP.findOne({ contactNumber });
-
-      if (existingOTP) {
-        const timeSinceLastOTP = Date.now() - existingOTP.createdAt.getTime();
-        if (timeSinceLastOTP < RESEND_OTP_WAIT_TIME) {
-          return res.status(400).json({ msg: "Please wait before requesting a new OTP." });
-        }
-        await OTP.deleteOne({ contactNumber }); 
-      }
-
-      const otp = generateOTP();
-      const expiry = Date.now() + OTP_EXPIRY_TIME;
-
-      await OTP.create({ contactNumber, otp, expiry });
-
-      console.log("Generated OTP:", otp); 
-
-      res.json({ msg: "OTP sent successfully. Check the console for testing." });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
+      await OTP.deleteOne({ contactNumber }); 
     }
-  },
-  
 
-  
-  verifyOTP: async (req, res) => {
-    try {
-      const { contactNumber, otp } = req.body;
+    const otp = generateOTP();
+    const expiry = Date.now() + OTP_EXPIRY_TIME;
 
-      const otpRecord = await OTP.findOne({ contactNumber });
+    await OTP.create({ contactNumber, otp, expiry });
 
-      if (!otpRecord || otpRecord.otp !== otp) {
-        return res.status(400).json({ msg: "Invalid OTP." });
-      }
+    console.log("Generated OTP:", otp); 
 
-      if (Date.now() > otpRecord.expiry) {
-        return res.status(400).json({ msg: "OTP expired." });
-      }
+    res.json({ 
+      msg: "OTP sent successfully. Check the console for testing.",
+      userExists // Include whether user exists in response
+    });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+},
 
-      const user = await Users.findOne({ contactNumber, role: "user" }).populate(
-        "followers following",
-        "-password"
-      );
+// otp verification api 
+verifyOTP: async (req, res) => {
+  try {
+    const { contactNumber, otp } = req.body;
 
-      const access_token = createAccessToken({ id: user._id });
-      const refresh_token = createRefreshToken({ id: user._id });
+    const otpRecord = await OTP.findOne({ contactNumber });
 
-      res.cookie("refreshtoken", refresh_token, {
-        httpOnly: true,
-        path: "/api/refresh_token",
-        sameSite: "lax",
-        maxAge: 30 * 24 * 60 * 60 * 1000, 
-      });
+    if (!otpRecord || otpRecord.otp !== otp) {
+      return res.status(400).json({ msg: "Invalid OTP." });
+    }
 
-      res.json({
-        msg: "Logged in Successfully!",
-        access_token,
-        user: { ...user._doc, password: "" },
-      });
+    if (Date.now() > otpRecord.expiry) {
+      return res.status(400).json({ msg: "OTP expired." });
+    }
 
+    // Check if user exists
+    const user = await Users.findOne({ contactNumber, role: "user" });
+
+    if (!user) {
+      // OTP is valid but user doesn't exist
       await OTP.deleteOne({ contactNumber });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
+      return res.status(200).json({
+        msg: "OTP verified successfully, but user is not registered.",
+        isRegistered: false
+      });
     }
-  },
+
+    // User exists, proceed with login
+    const populatedUser = await Users.findOne({ contactNumber, role: "user" }).populate(
+      "followers following",
+      "-password"
+    );
+
+    const access_token = createAccessToken({ id: user._id });
+    const refresh_token = createRefreshToken({ id: user._id });
+
+    res.cookie("refreshtoken", refresh_token, {
+      httpOnly: true,
+      path: "/api/refresh_token",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000, 
+    });
+
+    res.json({
+      msg: "Logged in Successfully!",
+      access_token,
+      user: { ...populatedUser._doc, password: "" },
+      isRegistered: true
+    });
+
+    await OTP.deleteOne({ contactNumber });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+},
 
   // Admin login route
   adminLogin: async (req, res) => {
