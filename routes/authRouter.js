@@ -15,6 +15,8 @@ router.post("/admin_login", authCtrl.adminLogin);
 
 router.post("/logout", authCtrl.logout);
 
+router.post("/generate_otp", authCtrl.generateOTP);  
+router.post("/verify_otp", authCtrl.verifyOTP);   
 
 router.post("/refresh_token", authCtrl.generateAccessToken);
 

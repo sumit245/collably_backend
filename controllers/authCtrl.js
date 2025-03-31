@@ -2,7 +2,11 @@ const Users = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const passport = require("../middleware/passport");
+const OTP = require("../models/otpModel");
 
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+const OTP_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
+const RESEND_OTP_WAIT_TIME = 1 * 60 * 1000; // 1 minute
 
 const authCtrl = {
   googleLogin: passport.authenticate("google", {
@@ -265,6 +269,87 @@ const authCtrl = {
           password: "", // Don't return the password in the response
         },
       });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  generateOTP: async (req, res) => {
+    try {
+      const { contactNumber } = req.body;
+
+      const user = await Users.findOne({ contactNumber, role: "user" });
+      if (!user) {
+        return res
+          .status(400)
+          .json({ msg: "Contact number is not registered." });
+      }
+
+      const existingOTP = await OTP.findOne({ contactNumber });
+
+      if (existingOTP) {
+        const timeSinceLastOTP = Date.now() - existingOTP.createdAt.getTime();
+        if (timeSinceLastOTP < RESEND_OTP_WAIT_TIME) {
+          return res
+            .status(400)
+            .json({ msg: "Please wait before requesting a new OTP." });
+        }
+        await OTP.deleteOne({ contactNumber });
+      }
+
+      const otp = generateOTP();
+      const expiry = Date.now() + OTP_EXPIRY_TIME;
+
+      await OTP.create({ contactNumber, otp, expiry });
+
+      console.log("Generated OTP:", otp); 
+
+      res.json({
+        msg: "OTP sent successfully. Check the console for testing.",
+      });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  // Verify OTP and login
+  verifyOTP: async (req, res) => {
+    try {
+      const { contactNumber, otp } = req.body;
+
+      const otpRecord = await OTP.findOne({ contactNumber });
+
+      if (!otpRecord || otpRecord.otp !== otp) {
+        return res.status(400).json({ msg: "Invalid OTP." });
+      }
+
+      if (Date.now() > otpRecord.expiry) {
+        return res.status(400).json({ msg: "OTP expired." });
+      }
+
+      const user = await Users.findOne({
+        contactNumber,
+        role: "user",
+      }).populate("followers following", "-password");
+
+      const access_token = createAccessToken({ id: user._id });
+      const refresh_token = createRefreshToken({ id: user._id });
+
+      res.cookie("refreshtoken", refresh_token, {
+        httpOnly: true,
+        path: "/api/refresh_token",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+
+      res.json({
+        msg: "Logged in Successfully!",
+        access_token,
+        user: { ...user._doc, password: "" },
+      });
+
+      // Delete OTP after successful verification
+      await OTP.deleteOne({ contactNumber });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
