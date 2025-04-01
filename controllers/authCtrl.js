@@ -310,6 +310,7 @@ generateOTP: async (req, res) => {
 },
 
 // otp verification api 
+// otp verification api 
 verifyOTP: async (req, res) => {
   try {
     const { contactNumber, otp } = req.body;
@@ -324,19 +325,17 @@ verifyOTP: async (req, res) => {
       return res.status(400).json({ msg: "OTP expired." });
     }
 
-    // Check if user exists
     const user = await Users.findOne({ contactNumber, role: "user" });
 
     if (!user) {
-      // OTP is valid but user doesn't exist
       await OTP.deleteOne({ contactNumber });
       return res.status(200).json({
         msg: "OTP verified successfully, but user is not registered.",
-        isRegistered: false
+        isRegistered: false,
+        verifiedNumber: contactNumber 
       });
     }
 
-    // User exists, proceed with login
     const populatedUser = await Users.findOne({ contactNumber, role: "user" }).populate(
       "followers following",
       "-password"
