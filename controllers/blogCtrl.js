@@ -82,7 +82,7 @@ exports.getBlogById = async (req, res) => {
       const blog = await Blog.findById(id).populate({
         path: "author",
         model: "user", // Ensure correct model name
-        select: "username email avatar", // Fetch only required fields
+        select: "username fullname email avatar", // Fetch only required fields
       });
   
       if (!blog) {
