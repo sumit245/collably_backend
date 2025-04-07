@@ -6,26 +6,31 @@ exports.createProduct = async (req, res) => {
     const { brandId, productname, description, price, quantity, category } =
       req.body;
 
-    // Validate that brand is an ObjectId
     if (!mongoose.Types.ObjectId.isValid(brandId)) {
       return res.status(400).json({ error: "Invalid brand ID" });
     }
 
-    const product = new Product({
+    const productData = {
       brandId,
       productname,
       description,
       price,
       quantity,
       category,
-    });
+    };
+    if (req.files && req.files.productPhoto) {
+      productData.productPhoto = req.files.productPhoto[0].location; 
+    }
 
+    const product = new Product(productData);
     await product.save();
+
     res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 exports.getProducts = async (req, res) => {
   try {
@@ -90,8 +95,6 @@ exports.getBrandProducts = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
-
 
 exports.getProductById = async (req, res) => {
   try {

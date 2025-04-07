@@ -2,7 +2,9 @@ const express = require("express");
 const path = require("path");
 const brandController = require("../controllers/brandController");
 const upload = require("../middleware/uploadMiddleware");
+const uploadMiddleware = require("../middleware/uploadMiddleware");
 const mongoose = require("mongoose");
+const { isValidObjectId } = require("mongoose");
 
 const router = express.Router();
 
@@ -15,7 +17,7 @@ const validateObjectId = (req, res, next) => {
 };
 
 
-router.post("/createbrand", upload, brandController.createBrand);
+router.post("/createbrand", uploadMiddleware, brandController.createBrand);
 
 
 router.post("/brandlogin", brandController.login);
@@ -25,7 +27,7 @@ router.get("/brand/:id", brandController.getBrandById);
 
 router.put(
   "/brands/:id",
-  upload,
+  uploadMiddleware,
   (req, res, next) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) {

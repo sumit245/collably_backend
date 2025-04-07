@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const passport = require("../middleware/passport");
 const OTP = require("../models/otpModel"); 
-
+const https = require("https");
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
 const OTP_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
 const RESEND_OTP_WAIT_TIME = 1 * 60 * 1000; // 1 minute
@@ -275,11 +275,11 @@ const authCtrl = {
   },
 
 //otp generation api 
+
 generateOTP: async (req, res) => {
   try {
     const { contactNumber } = req.body;
 
-    // Check if user exists (but don't return error if not)
     const user = await Users.findOne({ contactNumber, role: "user" });
     const userExists = !!user;
 
@@ -290,26 +290,76 @@ generateOTP: async (req, res) => {
       if (timeSinceLastOTP < RESEND_OTP_WAIT_TIME) {
         return res.status(400).json({ msg: "Please wait before requesting a new OTP." });
       }
-      await OTP.deleteOne({ contactNumber }); 
+      await OTP.deleteOne({ contactNumber });
     }
 
-    const otp = generateOTP();
+    const otp = generateOTP().toString(); 
     const expiry = Date.now() + OTP_EXPIRY_TIME;
 
     await OTP.create({ contactNumber, otp, expiry });
 
-    console.log("Generated OTP:", otp); 
+    const data = JSON.stringify({
+      apiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3ZWZjN2ZlYTVmMjc2NDM3NTI1NmM5YiIsIm5hbWUiOiJSaWp1bCBCaGF0aWEiLCJhcHBOYW1lIjoiQWlTZW5zeSIsImNsaWVudElkIjoiNjdlZmM3ZmVhNWYyNzY0Mzc1MjU2Yzk0IiwiYWN0aXZlUGxhbiI6IkJBU0lDX1RSSUFMIiwiaWF0IjoxNzQzNzY3NTUwfQ.yHiZ--dfXGC4qFbZOZ1JNM5tZ9S6znGoM7KDE_txF54",
+      campaignName: "Collably",
+      destination: `+91${contactNumber}`,
+      userName: "User",
+      source: "website",
+      templateParams: [String(otp)],
+      "buttons": [
+        {
+          "type": "button",
+          "sub_type": "url",
+          "index": 0,
+          "parameters": [
+            {
+              "type": "text",
+              "text": "TESTCODE20"
+            }
+          ]
+        }
+      ],
 
-    res.json({ 
-      msg: "OTP sent successfully. Check the console for testing.",
-      userExists // Include whether user exists in response
     });
+
+    const options = {
+      hostname: "backend.api-wa.co",
+      path: "/campaign/digintra/api/v2",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": data.length
+      }
+    };
+
+    const request = https.request(options, (response) => {
+      let responseBody = "";
+      response.on("data", (chunk) => {
+        responseBody += chunk;
+      });
+
+      response.on("end", () => {
+        console.log("WhatsApp API response:", responseBody);
+      });
+    });
+
+    request.on("error", (error) => {
+      console.error("WhatsApp API error:", error.message);
+    });
+
+    request.write(data);
+    request.end();
+
+    res.json({
+      msg: "OTP sent successfully via WhatsApp.",
+      userExists
+    });
+
   } catch (err) {
     return res.status(500).json({ msg: err.message });
   }
 },
 
-// otp verification api 
+
 // otp verification api 
 verifyOTP: async (req, res) => {
   try {
