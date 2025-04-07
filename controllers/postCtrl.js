@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 
 
 const postCtrl = {
+  
    createPost: async (req, res) => {
     try {
       console.log("Uploaded files:", req.files);
@@ -391,6 +392,7 @@ const postCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+
 };
 
 module.exports = postCtrl;
