@@ -4,7 +4,7 @@ const postCtrl = require("../controllers/postCtrl");
 const uploadMiddleware = require("../middleware/uploadMiddleware");
 
 router.post("/posts", auth, uploadMiddleware, postCtrl.createPost);
-router.get("/posts", postCtrl.getPosts); //getusername
+router.get("/posts", postCtrl.getPosts); 
 
 router
   .route("/post/:id")
