@@ -49,23 +49,29 @@ const userCtrl = {
   // Update user profile
   updateUser: async (req, res) => {
     try {
-      const { avatar, fullname, mobile, address, story, website, gender } =
-        req.body;
-      if (!fullname) {
-        return res.status(400).json({ msg: "Please add your full name." });
+      const { fullname, mobile, address, story, website, gender } = req.body;
+  
+      
+  
+      // ✅ Extract avatar from uploaded files
+      let avatar = req.body.avatar; // fallback if coming from a form field
+      if (req.files && req.files.avatar && req.files.avatar.length > 0) {
+        avatar = req.files.avatar[0].location; // S3 URL from multerS3
       }
-
+  
+      // ✅ Update user in DB
       await Users.findOneAndUpdate(
         { _id: req.user._id },
         { avatar, fullname, mobile, address, story, website, gender }
       );
-
+  
       res.json({ msg: "Profile updated successfully." });
     } catch (err) {
+      console.error("Update User Error:", err);
       return res.status(500).json({ msg: err.message });
     }
   },
-
+  
   // Follow a user
   follow: async (req, res) => {
     try {

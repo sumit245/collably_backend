@@ -44,6 +44,8 @@ const upload = multer({
 }).fields([
   { name: "media", maxCount: 5 }, // Multiple media files
   { name: "brandLogo", maxCount: 1 }, // Single brand logo
+  { name: "productPhoto", maxCount: 1 },
+  {name: "avatar", maxCount: 1 },
 ]);
 
 // ✅ Middleware for handling upload errors

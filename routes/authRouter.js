@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const authCtrl = require('../controllers/authCtrl');
 const auth = require('../middleware/auth');
+const uploadMiddleware = require("../middleware/uploadMiddleware");
 
-
-router.post('/register', authCtrl.register);
+router.post('/register', uploadMiddleware, authCtrl.register);
+router.delete('/user/:id',  authCtrl.deleteUser);
 // router.post('/register-by-ig',authCtrl.igRegister)
 router.post("/register_admin", authCtrl.registerAdmin);
 router.post("/changePassword", auth, authCtrl.changePassword);
