@@ -7,23 +7,36 @@ exports.uploadBlog = async (req, res) => {
     console.log("📩 Received request to upload blog");
 
     const { title, content } = req.body;
-    const userId = req.user.id; // Extracted from the auth middleware
+    const userId = req.user.id;
 
     if (!title || !content) {
-      console.log("❌ Missing title or content");
       return res.status(400).json({ msg: "Title and Content are required." });
     }
 
-    const newBlog = new Blog({ title, content, author: userId });
+    // ✅ Handle image upload like brandLogo
+    let blogImage = null;
+    if (req.files && req.files.blogImage && req.files.blogImage.length > 0) {
+      blogImage = req.files.blogImage[0].location; // S3 image URL (from multerS3)
+    }
+
+    // ✅ Create new blog entry
+    const newBlog = new Blog({
+      title,
+      content,
+      author: userId,
+      image: blogImage, // Store image URL
+    });
+
     await newBlog.save();
 
     console.log("✅ Blog saved to database:", newBlog);
     res.json({ msg: "Blog uploaded successfully!", blog: newBlog });
   } catch (err) {
-    console.log("❌ Error while uploading blog:", err);
+    console.error("❌ Error while uploading blog:", err);
     res.status(500).json({ msg: err.message });
   }
 };
+
 
 // ✅ View All Blogs (Public)
 exports.viewBlogs = async (req, res) => {
