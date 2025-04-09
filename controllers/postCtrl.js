@@ -5,40 +5,35 @@ const mongoose = require("mongoose");
 
 
 const postCtrl = {
-  
-   createPost: async (req, res) => {
+  createPost: async (req, res) => {
     try {
       console.log("Uploaded files:", req.files);
-
-      // Check if files are uploaded
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ msg: "Please add an image or a video." });
+  
+      const mediaFiles = req.files.media || [];
+      const brandLogoFile = req.files.brandLogo?.[0];
+  
+      if (mediaFiles.length === 0) {
+        return res.status(400).json({ msg: "Please add at least one image or video." });
       }
-
+  
       let images = [];
       let video = null;
-
-      // Determine if uploaded media is images or a video
-      req.files.forEach((file) => {
+  
+      mediaFiles.forEach((file) => {
         if (file.mimetype.startsWith("image/")) {
           images.push(file.location); // S3 URL
         } else if (file.mimetype.startsWith("video/")) {
           video = file.location; // S3 URL
         }
       });
-
-      // Ensure either images OR video is uploaded, not both
+  
       if (images.length > 0 && video) {
-        return res
-          .status(400)
-          .json({ msg: "You can upload either images or a video, not both." });
+        return res.status(400).json({ msg: "Upload either images or a video, not both." });
       }
-
-      // Extract text data from request
+  
       const { content, caption, body, tags } = req.body;
       console.log("Extracted data:", { content, caption, body, tags });
-
-      // Create a new post
+  
       const newPost = new Posts({
         content,
         caption,
@@ -46,12 +41,12 @@ const postCtrl = {
         tags: tags ? tags.split(",") : [],
         images,
         video,
-        user: req.user._id,  // Assuming you have a `user` in req.user (JWT/Authentication)
+        brandLogo: brandLogoFile ? brandLogoFile.location : null,
+        user: req.user._id,
       });
-
-      // Save to database
+  
       await newPost.save();
-
+  
       return res.json({
         msg: "Post created successfully.",
         newPost,
@@ -61,6 +56,65 @@ const postCtrl = {
       return res.status(500).json({ msg: "Server error. Please try again later." });
     }
   },
+  
+
+  updatePost: async (req, res) => {
+    try {
+      const mediaFiles = req.files?.media || [];
+      const brandLogoFile = req.files?.brandLogo?.[0];
+  
+      let images = [];
+      let video = null;
+  
+      mediaFiles.forEach((file) => {
+        if (file.mimetype.startsWith("image/")) {
+          images.push(file.location);
+        } else if (file.mimetype.startsWith("video/")) {
+          video = file.location;
+        }
+      });
+  
+      if (images.length > 0 && video) {
+        return res.status(400).json({ msg: "Upload either images or a video, not both." });
+      }
+  
+      const { content, caption, body, tags } = req.body;
+  
+      const updateData = {
+        content,
+        caption,
+        body,
+        tags: tags ? tags.split(",") : [],
+      };
+  
+      if (images.length > 0) updateData.images = images;
+      if (video) updateData.video = video;
+      if (brandLogoFile) updateData.brandLogo = brandLogoFile.location;
+  
+      const post = await Posts.findOneAndUpdate(
+        { _id: req.params.id },
+        updateData,
+        { new: true }
+      )
+        .populate("user likes", "avatar username fullname")
+        .populate({
+          path: "comments",
+          populate: {
+            path: "user likes",
+            select: "-password",
+          },
+        });
+  
+      return res.json({
+        msg: "Post updated successfully.",
+        newPost: post,
+      });
+    } catch (err) {
+      console.error("Error updating post:", err);
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  
 
   getPosts: async (req, res) => {
     try {
@@ -85,39 +139,7 @@ const postCtrl = {
     }
   },
 
-  updatePost: async (req, res) => {
-    try {
-      const { content, images } = req.body;
-
-      const post = await Posts.findOneAndUpdate(
-        { _id: req.params.id },
-        {
-          content,
-          images,
-        },
-        { new: true }
-      )
-        .populate("user likes", "avatar username fullname")
-        .populate({
-          path: "comments",
-          populate: {
-            path: "user likes",
-            select: "-password",
-          },
-        });
-
-      res.json({
-        msg: "Post updated successfully.",
-        newPost: {
-          ...post._doc,
-          content,
-          images,
-        },
-      });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
-    }
-  },
+  
 
   likePost: async (req, res) => {
     try {

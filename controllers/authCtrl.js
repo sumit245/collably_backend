@@ -7,7 +7,7 @@ const https = require("https");
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
 const OTP_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
 const RESEND_OTP_WAIT_TIME = 1 * 60 * 1000; // 1 minute
-
+const mongoose = require("mongoose");
 const authCtrl = {
   googleLogin: passport.authenticate("google", {
     scope: ["profile", "email"],
@@ -71,38 +71,45 @@ const authCtrl = {
   // User registration route
   register: async (req, res) => {
     try {
-      const { fullname, username, email, contactNumber, password, gender } =
-        req.body;
-
+      const { fullname, username, email, contactNumber, password, gender } = req.body;
+  
+      console.log("➡️ Incoming Register Request");
+      console.log("📦 req.body:", req.body);
+      console.log("🖼 req.files:", req.files); // for debugging
+  
+      // ✅ Handle avatar upload like brandLogo
+      let avatar = null;
+      if (req.files && req.files.avatar && req.files.avatar.length > 0) {
+        avatar = req.files.avatar[0].location;
+        console.log("✅ Avatar uploaded to:", avatar);
+      } else {
+        console.warn("⚠️ No avatar uploaded or field not recognized.");
+      }
+  
       let newUserName = username.toLowerCase().replace(/ /g, "");
-
+  
       const user_name = await Users.findOne({ username: newUserName });
       if (user_name) {
         return res.status(400).json({ msg: "This username is already taken." });
       }
-
+  
       const user_email = await Users.findOne({ email });
       if (user_email) {
-        return res
-          .status(400)
-          .json({ msg: "This email is already registered." });
+        return res.status(400).json({ msg: "This email is already registered." });
       }
-
+  
       const user_mobile = await Users.findOne({ contactNumber });
       if (user_mobile) {
-        return res
-          .status(400)
-          .json({ msg: "This mobile number is already registered." });
+        return res.status(400).json({ msg: "This mobile number is already registered." });
       }
-
+  
       if (password.length < 6) {
-        return res
-          .status(400)
-          .json({ msg: "Password must be at least 6 characters long." });
+        return res.status(400).json({ msg: "Password must be at least 6 characters long." });
       }
-
+  
       const passwordHash = await bcrypt.hash(password, 12);
-
+  
+      // ✅ Include avatar in user creation
       const newUser = new Users({
         fullname,
         username: newUserName,
@@ -110,32 +117,56 @@ const authCtrl = {
         contactNumber,
         password: passwordHash,
         gender,
+        avatar,
       });
-
+  
       const access_token = createAccessToken({ id: newUser._id });
       const refresh_token = createRefreshToken({ id: newUser._id });
-
+  
       res.cookie("refreshtoken", refresh_token, {
         httpOnly: true,
         path: "/api/refresh_token",
-        maxAge: 30 * 24 * 60 * 60 * 1000, //validity of 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
-
+  
       await newUser.save();
-
+  
       res.json({
         msg: "Registered Successfully!",
         access_token,
         user: {
           ...newUser._doc,
-          password: "",
+          password: "", // hide password
         },
       });
     } catch (err) {
+      console.error("❌ Register Error:", err);
       return res.status(500).json({ msg: err.message });
     }
   },
+  
 
+  //user delete 
+  deleteUser : async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      // Validate ObjectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ msg: "Invalid user ID." });
+      }
+  
+      const deletedUser = await Users.findByIdAndDelete(id);
+  
+      if (!deletedUser) {
+        return res.status(404).json({ msg: "User not found." });
+      }
+  
+      res.status(200).json({ msg: "User deleted successfully." });
+    } catch (error) {
+      res.status(500).json({ msg: error.message });
+    }
+  },
   // Change password route
   changePassword: async (req, res) => {
     try {
