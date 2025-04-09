@@ -3,26 +3,37 @@ const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
 const mongoose = require("mongoose");
 
+
 const postCtrl = {
   createPost: async (req, res) => {
     try {
-      if (!req.files) {
-        return res.status(400).json({ msg: "Please add an image or a video." });
+      console.log("Uploaded files:", req.files);
+
+      const mediaFiles = req.files.media || [];
+      const brandLogoFile = req.files.brandLogo?.[0];
+
+      if (mediaFiles.length === 0) {
+        return res.status(400).json({ msg: "Please add at least one image or video." });
       }
+
       let images = [];
       let video = null;
 
-      // Determine if uploaded media is images or a video
-      req.files.forEach((file) => {
+      mediaFiles.forEach((file) => {
         if (file.mimetype.startsWith("image/")) {
-          images.push(file.location);
+          images.push(file.location); // S3 URL
         } else if (file.mimetype.startsWith("video/")) {
-          video = file.location;
+          video = file.location; // S3 URL
         }
       });
-      // Extract text data from request
+
+      if (images.length > 0 && video) {
+        return res.status(400).json({ msg: "Upload either images or a video, not both." });
+      }
+
       const { content, caption, body, tags } = req.body;
-      // Create a new post
+      console.log("Extracted data:", { content, caption, body, tags });
+
       const newPost = new Posts({
         content,
         caption,
@@ -30,30 +41,84 @@ const postCtrl = {
         tags: tags ? tags.split(",") : [],
         images,
         video,
+        brandLogo: brandLogoFile ? brandLogoFile.location : null,
         user: req.user._id,
       });
-      // Save to database
+
       await newPost.save();
+
       return res.json({
         msg: "Post created successfully.",
-        newPost: {
-          ...newPost._doc,
-          // user: req.user,
-        },
+        newPost,
       });
     } catch (err) {
       console.error("Error creating post:", err);
-      return res
-        .status(500)
-        .json({ msg: "Server error. Please try again later." });
+      return res.status(500).json({ msg: "Server error. Please try again later." });
     }
   },
 
+
+  updatePost: async (req, res) => {
+    try {
+      const mediaFiles = req.files?.media || [];
+      const brandLogoFile = req.files?.brandLogo?.[0];
+
+      let images = [];
+      let video = null;
+
+      mediaFiles.forEach((file) => {
+        if (file.mimetype.startsWith("image/")) {
+          images.push(file.location);
+        } else if (file.mimetype.startsWith("video/")) {
+          video = file.location;
+        }
+      });
+
+      if (images.length > 0 && video) {
+        return res.status(400).json({ msg: "Upload either images or a video, not both." });
+      }
+
+      const { content, caption, body, tags } = req.body;
+
+      const updateData = {
+        content,
+        caption,
+        body,
+        tags: tags ? tags.split(",") : [],
+      };
+
+      if (images.length > 0) updateData.images = images;
+      if (video) updateData.video = video;
+      if (brandLogoFile) updateData.brandLogo = brandLogoFile.location;
+
+      const post = await Posts.findOneAndUpdate(
+        { _id: req.params.id },
+        updateData,
+        { new: true }
+      )
+        .populate("user likes", "avatar username fullname")
+        .populate({
+          path: "comments",
+          populate: {
+            path: "user likes",
+            select: "-password",
+          },
+        });
+
+      return res.json({
+        msg: "Post updated successfully.",
+        newPost: post,
+      });
+    } catch (err) {
+      console.error("Error updating post:", err);
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+
   getPosts: async (req, res) => {
     try {
-      // Yaha se bhi req.user.following hata diya hai isse kisi bhi user ko kisi ka bhi post dikhega aaj submit karke ye params
-      // pass kar dena req.user.following and req.user._id wala
-      const posts = await Posts.find() //user: [...req.user.following, req.user._id],
+      const posts = await Posts.find()
         .sort("-createdAt")
         .populate("user likes", "avatar username fullname followers")
         .populate({
@@ -74,39 +139,7 @@ const postCtrl = {
     }
   },
 
-  updatePost: async (req, res) => {
-    try {
-      const { content, images } = req.body;
 
-      const post = await Posts.findOneAndUpdate(
-        { _id: req.params.id },
-        {
-          content,
-          images,
-        },
-        { new: true }
-      )
-        .populate("user likes", "avatar username fullname")
-        .populate({
-          path: "comments",
-          populate: {
-            path: "user likes",
-            select: "-password",
-          },
-        });
-
-      res.json({
-        msg: "Post updated successfully.",
-        newPost: {
-          ...post._doc,
-          content,
-          images,
-        },
-      });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
-    }
-  },
 
   likePost: async (req, res) => {
     try {
@@ -166,13 +199,13 @@ const postCtrl = {
     try {
       const { page = 1, limit = 10 } = req.query;
       const skip = (page - 1) * limit;
-      const userId = req.params.id || req.user._id; // Ensure correct userId
+      const userId = req.params.id || req.user._id;
 
-      console.log("Fetching posts for user ID:", userId); // Log user ID for debugging
+      console.log("Fetching posts for user ID:", userId);
 
       // Fetch posts for the given user
-      const posts = await Posts.find({ user: userId }) // Match posts with the user ID
-        .sort("-createdAt") // Sort by creation date (most recent first)
+      const posts = await Posts.find({ user: userId })
+        .sort("-createdAt")
         .skip(skip) // Implement pagination
         .limit(Number(limit)) // Implement pagination limit
         .populate("user", "avatar username fullname followers") // Populate user details
@@ -369,10 +402,9 @@ const postCtrl = {
         return res.status(404).json({ msg: "User not found" });
       }
 
-    
       const savedPosts = await Posts.find({
-        _id: { $in: user.saved }, 
-      }).sort("-createdAt"); 
+        _id: { $in: user.saved },
+      }).sort("-createdAt");
 
       res.json({
         savedPosts,
@@ -382,7 +414,6 @@ const postCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-  
 };
 
 module.exports = postCtrl;

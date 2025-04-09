@@ -1,30 +1,51 @@
-/**
- * Express router for brand-related API endpoints
- * 
- * Provides routes for brand operations including:
- * - Creating a new brand
- * - Brand login
- * - Retrieving all brands
- * - Retrieving a specific brand by ID
- * - Updating a brand
- * - Deleting a brand
- * 
- * Uses upload middleware for handling file uploads related to brands
- * Depends on brandController for handling the logic of each route
- * 
- * @module brandsApi
- */
+const express = require("express");
+const path = require("path");
+const brandController = require("../controllers/brandController");
+const upload = require("../middleware/uploadMiddleware");
+const uploadMiddleware = require("../middleware/uploadMiddleware");
+const mongoose = require("mongoose");
+const { isValidObjectId } = require("mongoose");
 
-const router = require("express").Router()
-const brandController = require("../controllers/brandController")
-const upload = require("../middleware/uploadMiddleware")
+const router = express.Router();
+
+const validateObjectId = (req, res, next) => {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid ObjectId format" });
+    }
+    next();
+};
 
 
-router.post("/createbrand", upload('brands'), brandController.createBrand);
+router.post("/createbrand", uploadMiddleware, brandController.createBrand);
+
+
 router.post("/brandlogin", brandController.login);
 router.get("/brands", brandController.getAllBrands);
 router.get("/brand/:id", brandController.getBrandById);
-router.put("/brands/:id", upload('brands'), brandController.updateBrand);
-router.delete("/brand/:id", brandController.deleteBrand);
+
+
+router.put(
+    "/brands/:id",
+    uploadMiddleware,
+    (req, res, next) => {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ message: "Invalid ObjectId format" });
+        }
+        next();
+    },
+    brandController.updateBrand
+);
+
+router.delete("/brand/:id", (req, res, next) => {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+        return res.status(400).json({ message: "Invalid ObjectId format" });
+    }
+    next();
+},
+    brandController.deleteBrand
+);
 
 module.exports = router;

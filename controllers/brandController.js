@@ -5,32 +5,59 @@ const JWT_SECRET = process.env.JWT_TOKEN;
 
 exports.createBrand = async (req, res) => {
   try {
-    const { contactEmail } = req.body;
+    const {
+      brandName,
+      brandDescription,
+      brandCategory,
+      contactEmail,
+      brandWebsite,
+      brandPhoneNumber,
+      socialMediaLinks,
+      gstNumber,
+      password,
+    } = req.body;
 
-    // Check if any file is uploaded
-    const brandLogo =
-      req.files && req.files.length > 0 ? req.media : null;
+    console.log("Uploaded Files:", req.files);
 
-    // Check if brand email already exists
+    let brandLogo = null;
+    if (req.files && req.files.brandLogo && req.files.brandLogo.length > 0) {
+      brandLogo = req.files.brandLogo[0].location;
+    }
+
     const existingBrand = await Brand.findOne({ contactEmail });
     if (existingBrand) {
-      return res
-        .status(400)
-        .json({ message: "Email address is already in use" });
+      return res.status(400).json({ message: "Email address is already in use" });
     }
 
     // Create a new brand object
-    const brand = new Brand({ ...req.body, brandLogo });
+    const brand = new Brand({
+      brandName,
+      brandLogo, // Store uploaded brand logo
+      brandDescription,
+      brandCategory,
+      contactEmail,
+      brandWebsite,
+      brandPhoneNumber,
+      socialMediaLinks,
+      gstNumber,
+      password,
+    });
 
-    // Save the brand to the database
+    // Save to database
     await brand.save();
-    res.status(201).json({ message: "Brand created successfully", brand });
+
+    return res.status(201).json({
+      message: "Brand created successfully",
+      brand,
+    });
+
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error creating brand", error: err.message });
+    console.error("Error creating brand:", err);
+    return res.status(500).json({ message: "Error creating brand", error: err.message });
   }
 };
+
+
 
 // Login (authenticate brand)
 exports.login = async (req, res) => {
@@ -130,14 +157,14 @@ exports.updateBrand = async (req, res) => {
       gstNumber,
     };
 
-    // Check if a new logo is uploaded
-    if (req.files && req.files.length > 0) {
-      updatedData.brandLogo = req.files[0].path; // Save the new logo path
+    // ✅ Check if a new logo is uploaded
+    if (req.files && req.files.brandLogo) {
+      updatedData.brandLogo = req.files.brandLogo[0].location; // ✅ Save S3 URL
     }
 
-    // Find and update the brand
+    // ✅ Find and update the brand
     const brand = await Brand.findByIdAndUpdate(req.params.id, updatedData, {
-      new: true, // Return the updated brand
+      new: true, // ✅ Return updated brand
     });
 
     if (!brand) {
@@ -146,11 +173,10 @@ exports.updateBrand = async (req, res) => {
 
     res.status(200).json({ message: "Brand updated successfully", brand });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error updating brand", error: err.message });
+    res.status(500).json({ message: "Error updating brand", error: err.message });
   }
 };
+
 
 // Delete a brand by ID
 exports.deleteBrand = async (req, res) => {

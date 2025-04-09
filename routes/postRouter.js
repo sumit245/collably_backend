@@ -12,10 +12,11 @@
 const router = require("express").Router();
 const auth = require("../middleware/auth");
 const postCtrl = require("../controllers/postCtrl");
-const upload = require("../middleware/uploadMiddleware");
+const uploadMiddleware = require("../middleware/uploadMiddleware");
 
-router.post("/posts", auth, upload(`posts`), postCtrl.createPost);
-router.get("/posts", postCtrl.getPosts);  //getusername
+router.post("/posts", auth, uploadMiddleware, postCtrl.createPost);
+router.get("/posts", postCtrl.getPosts);
+
 router
   .route("/post/:id")
   .patch(auth, postCtrl.updatePost)

@@ -1,37 +1,34 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-require('dotenv').config();
-const { S3Client } = require("@aws-sdk/client-s3");
 const multerS3 = require("multer-s3");
+const { S3Client } = require("@aws-sdk/client-s3"); // Correct AWS SDK v3 import
+const path = require("path");
+require("dotenv").config();
 
-// AWS S3 Configuration
+// ✅ Correct S3 client initialization
 const s3 = new S3Client({
   region: process.env.AWS_DEFAULT_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
-const s3Storage = (directory) => {
-  return multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    metadata: (req, file, cb) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: (req, file, cb) => {
-      cb(null, `${directory}/${Date.now()}/${file.originalname}`);
-    }
-  })
-}
+// ✅ Remove ACL option to prevent errors
+const storage = multerS3({
+  s3: s3,
+  bucket: process.env.AWS_BUCKET, // Your S3 bucket name
+  metadata: (req, file, cb) => {
+    cb(null, { fieldName: file.fieldname });
+  },
+  key: (req, file, cb) => {
+    const fileExtension = path.extname(file.originalname);
+    const uniqueKey = `media/${Date.now()}${fileExtension}`;
+    cb(null, uniqueKey);
+  },
+});
 
-// File filter: Allow only images and videos
+// ✅ File filter to allow only images/videos
 const fileFilter = (req, file, cb) => {
-  if (!file) {
-    return cb(new Error("No file uploaded"), false);
-  }
   if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
     cb(null, true);
   } else {
@@ -39,41 +36,32 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Middleware wrapper to catch errors
-const uploadMiddleware = (directory) => {
-  const uploadToS3 = multer({
-    storage: s3Storage(directory),
-    fileFilter,
-    limits: { fileSize: 50 * 1024 * 1024 }
-  }).array("media", 5);
-  return (req, res, next) => {
-    const timeout = setTimeout(() => {
-      return res.status(408).json({ error: 'Upload timeout' });
-    }, 30000);
+// ✅ Configure Multer with field-based upload
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+}).fields([
+  { name: "media", maxCount: 5 }, // Multiple media files
+  { name: "brandLogo", maxCount: 1 }, // Single brand logo
+  { name: "productPhoto", maxCount: 1 },
+  { name: "avatar", maxCount: 1 },
+  { name: "blogImage", maxCount: 1 }
+]);
 
-    if (!req.headers['content-type']?.includes('multipart/form-data')) {
-      return res.status(400).json({ error: 'Invalid content type' });
+// ✅ Middleware for handling upload errors
+const uploadMiddleware = (req, res, next) => {
+  upload(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error("Multer error:", err);
+      return res.status(400).json({ error: `Multer error: ${err.message}` });
+    } else if (err) {
+      console.error("S3 Upload Error:", err);
+      return res.status(500).json({ error: `S3 upload error: ${err.message}` });
     }
-
-    uploadToS3(req, res, (err) => {
-      clearTimeout(timeout);
-      if (err) {
-        return res.status(400).json({
-          error: err instanceof multer.MulterError ?
-            `MulterError ${err.stack} ${err.message} ${err.field}` :
-            `GeneralError ${err.message}`
-        });
-      }
-
-      // Add file locations to request object
-      if (req.files) {
-        req.media = req.files.map(file => file.location);
-      }
-      next();
-    });
-  };
-}
-
+    next(); // Proceed if no errors
+  });
+};
 
 module.exports = uploadMiddleware;
 // default export 
