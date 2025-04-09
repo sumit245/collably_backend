@@ -48,6 +48,7 @@ app.use("/api", require("./routes/referralRouter"));
 app.use("/api", require("./routes/orderRouter"));
 app.use("/api", require("./routes/brandRouter"));
 app.use("/api", require("./routes/blogRouter"));
+//adding comment for testing blog api
 //#endregion
 
 // Passport setup
