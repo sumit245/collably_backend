@@ -6,6 +6,7 @@ const auth = require("../middleware/auth");
 const uploadMiddleware = require("../middleware/uploadMiddleware");
 
 router.post("/upload", auth, uploadMiddleware, blogCtrl.uploadBlog); 
+router.put("/update_blog/:id", auth, uploadMiddleware, blogCtrl.updateBlog); 
 router.get("/view_blogs", blogCtrl.viewBlogs); 
 router.delete("/delete_blogs/:id", auth, blogCtrl.deleteBlog);
 router.get("/view_blogs/:id", blogCtrl.getBlogById); 

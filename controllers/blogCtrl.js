@@ -6,7 +6,7 @@ exports.uploadBlog = async (req, res) => {
   try {
     console.log("📩 Received request to upload blog");
 
-    const { title, content } = req.body;
+    const { title, content, category } = req.body;
     const userId = req.user.id;
 
     if (!title || !content) {
@@ -24,6 +24,7 @@ exports.uploadBlog = async (req, res) => {
       title,
       content,
       author: userId,
+      category,
       image: blogImage, // Store image URL
     });
 
@@ -36,6 +37,55 @@ exports.uploadBlog = async (req, res) => {
     res.status(500).json({ msg: err.message });
   }
 };
+
+exports.updateBlog = async (req, res) => {
+  try {
+    const blogId = req.params.id;
+    const userId = req.user.id;
+
+    console.log("🛠️ Received update request for blog:", blogId);
+    console.log("📦 Body:", req.body);
+    console.log("🖼️ Files:", req.files);
+
+    const blog = await Blog.findById(blogId);
+    if (!blog) {
+      console.log("❌ Blog not found");
+      return res.status(404).json({ msg: "Blog not found." });
+    }
+
+    if (blog.author.toString() !== userId) {
+      console.log("⛔ Unauthorized access attempt");
+      return res.status(403).json({ msg: "Unauthorized to update this blog." });
+    }
+
+    const { title, content, category } = req.body;
+
+    // 🔁 Update fields
+    if (title) blog.title = title;
+    if (content) blog.content = content;
+    if (category) blog.category = category;
+
+    // 🖼️ Check if a new image is being uploaded
+    if (req.files && req.files.blogImage && req.files.blogImage.length > 0) {
+      const imagePath = req.files.blogImage[0].location;
+      console.log("✅ New blog image received:", imagePath);
+      blog.image = imagePath;
+    } else {
+      console.log("ℹ️ No new blog image uploaded");
+    }
+
+    await blog.save();
+
+    console.log("✅ Blog updated successfully:", blog);
+    res.json({ msg: "Blog updated successfully!", blog });
+
+  } catch (err) {
+    console.error("❌ Error while updating blog:", err);
+    res.status(500).json({ msg: err.message });
+  }
+};
+
+
 
 
 // ✅ View All Blogs (Public)
