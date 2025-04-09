@@ -1,59 +1,55 @@
 const multer = require("multer");
 const multerS3 = require("multer-s3");
-const AWS = require("aws-sdk");
+const { S3Client } = require("@aws-sdk/client-s3"); // Correct AWS SDK v3 import
 const path = require("path");
+require("dotenv").config();
 
-// Set up AWS S3 configuration
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+// ✅ Correct S3 client initialization
+const s3 = new S3Client({
   region: process.env.AWS_DEFAULT_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
-// Configure multer storage to upload directly to S3
+// ✅ Remove ACL option to prevent errors
 const storage = multerS3({
   s3: s3,
-  bucket: process.env.AWS_BUCKET, // Your S3 Bucket name
-  acl: "public-read",
+  bucket: process.env.AWS_BUCKET, // Your S3 bucket name
   metadata: (req, file, cb) => {
     cb(null, { fieldName: file.fieldname });
   },
   key: (req, file, cb) => {
-    // Generate a unique key for the file in S3
     const fileExtension = path.extname(file.originalname);
-    const uniqueKey = Date.now() + fileExtension; // Ensuring the file name is unique
-    cb(null, `media/${uniqueKey}`);
+    const uniqueKey = `media/${Date.now()}${fileExtension}`;
+    cb(null, uniqueKey);
   },
 });
 
-// File filter to only allow image/video files
+// ✅ File filter to allow only images/videos
 const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype.startsWith("image/") ||
-    file.mimetype.startsWith("video/")
-  ) {
+  if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
     cb(null, true);
   } else {
-    cb(
-      new Error("Invalid file type. Only images and videos are allowed."),
-      false
-    );
+    cb(new Error("Invalid file type. Only images and videos are allowed."), false);
   }
 };
 
-// Multer configuration for multiple file uploads (max 5 files)
+// ✅ Configure Multer with field-based upload
 const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
-})
-  // .array( "media", 5 ); // Accepts multiple images or one video under "media"
-  .fields([
-    { name: "media", maxCount: 5 }, // Multiple files for general media
-    { name: "brandLogo", maxCount: 1 }, // Single file for brand logo
-  ]); 
+}).fields([
+  { name: "media", maxCount: 5 }, // Multiple media files
+  { name: "brandLogo", maxCount: 1 }, // Single brand logo
+  { name: "productPhoto", maxCount: 1 },
+  {name: "avatar", maxCount: 1 },
+  { name: "blogImage", maxCount: 1 }
+]);
 
-// Middleware wrapper to catch errors
+// ✅ Middleware for handling upload errors
 const uploadMiddleware = (req, res, next) => {
   upload(req, res, (err) => {
     if (err instanceof multer.MulterError) {

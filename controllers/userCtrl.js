@@ -49,23 +49,58 @@ const userCtrl = {
   // Update user profile
   updateUser: async (req, res) => {
     try {
-      const { avatar, fullname, mobile, address, story, website, gender } =
-        req.body;
-      if (!fullname) {
-        return res.status(400).json({ msg: "Please add your full name." });
+      const {
+        fullname,
+        username,
+        email,
+        contactNumber,
+        gender,
+        address,
+        story,
+        website
+      } = req.body;
+  
+      console.log("📥 Update Request Body:", req.body);
+      console.log("🖼 Update Request Files:", req.files);
+  
+      let avatar = req.body.avatar; 
+      if (req.files && req.files.avatar && req.files.avatar.length > 0) {
+        avatar = req.files.avatar[0].location;
       }
-
-      await Users.findOneAndUpdate(
+  
+      const updateFields = {
+        ...(fullname && { fullname }),
+        ...(username && { username: username.toLowerCase().replace(/ /g, "") }),
+        ...(email && { email }),
+        ...(contactNumber && { contactNumber }),
+        ...(gender && { gender }),
+        ...(address && { address }),
+        ...(story && { story }),
+        ...(website && { website }),
+        ...(avatar && { avatar }),
+      };
+  
+  
+      const updatedUser = await Users.findOneAndUpdate(
         { _id: req.user._id },
-        { avatar, fullname, mobile, address, story, website, gender }
+        updateFields,
+        { new: true }
       );
-
-      res.json({ msg: "Profile updated successfully." });
+  
+      res.json({
+        msg: "Profile updated successfully.",
+        user: {
+          ...updatedUser._doc,
+          password: "", // hide password
+        },
+      });
     } catch (err) {
+      console.error("❌ Update User Error:", err);
       return res.status(500).json({ msg: err.message });
     }
   },
-
+  
+  
   // Follow a user
   follow: async (req, res) => {
     try {

@@ -7,7 +7,7 @@ const SocketServer = require("./socketServer");
 const session = require("express-session");
 const passport = require("./middleware/passport");
 const corsOptions = {
-  Credential: "true",
+  credentials: "true",
   origin: "*",
 };
 
@@ -15,6 +15,7 @@ const app = express();
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
 app.options("*", cors(corsOptions));
 // app.use(cors(corsOptions)); 
 app.use(cookieParser());
@@ -50,6 +51,7 @@ app.use("/api", require("./routes/productRouter"));
 app.use("/api", require("./routes/referralRouter"));
 app.use("/api", require("./routes/orderRouter"));
 app.use("/api", require("./routes/brandsApi"));
+app.use("/api", require("./routes/blogRouter"));
 //#endregion
 
 // Passport setup
