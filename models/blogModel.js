@@ -8,7 +8,8 @@ const BlogSchema = new mongoose.Schema(
     image: {
       type: String,
       default: "", 
-    }
+    },
+    category: { type: String, required: true },
   },
   { timestamps: true }
 );

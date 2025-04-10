@@ -5,6 +5,7 @@ const referralCtrl = require("../controllers/referralCtrl");
 router.post("/createreferral", referralCtrl.createReferral);
 
 router.get("/referral/:id", referralCtrl.getReferralsByUserId);
+router.get("/referral/brand/:id", referralCtrl.getReferralsByBrandId);
 
 router.get("/referral/brand/:id", referralCtrl.getReferralsByBrandId);
 

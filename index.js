@@ -28,6 +28,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static("uploads"));
 
 //#region // !Socket
 const http = require("http").createServer(app);
