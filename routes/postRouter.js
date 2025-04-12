@@ -5,6 +5,8 @@ const uploadMiddleware = require("../middleware/uploadMiddleware");
 
 router.post("/posts", auth, uploadMiddleware, postCtrl.createPost);
 router.get("/posts", postCtrl.getPosts); 
+router.delete('/posts/deleteAll', postCtrl.deleteAllPosts);
+
 router.post("/scrape-product", postCtrl.extractProductInfo);
 router
   .route("/post/:id")

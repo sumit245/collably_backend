@@ -42,18 +42,69 @@ const postCtrl = {
         const productURL = urlMatch[0];
         console.log("Detected product URL:", productURL);
   
-        const browser = await puppeteer.launch({ headless: "new" });
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-blink-features=AutomationControlled",
+          ],
+        });
+  
         const page = await browser.newPage();
-        await page.goto(productURL, { waitUntil: "networkidle2" });
+  
+        await page.setUserAgent(
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        );
+  
+        await page.setExtraHTTPHeaders({
+          "Accept-Language": "en-US,en;q=0.9",
+        });
+  
+        await page.setViewport({ width: 1280, height: 800 });
+  
+        await page.goto(productURL, { waitUntil: "networkidle2", timeout: 30000 });
+  
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // wait for content to load
   
         const metadata = await page.evaluate(() => {
-          const title = document.querySelector("meta[property='og:title']")?.content || document.title;
-          const image = document.querySelector("meta[property='og:image']")?.content;
-          const price = document.querySelector("meta[property='product:price:amount']")?.content ||
-          document.querySelector('[itemprop="price"]')?.content ||
-          document.querySelector('div._30jeq3')?.innerText.replace(/[^\d]/g, "");
-
-          return { title, image, price };
+          const getTitle = () =>
+            document.querySelector('meta[property="og:title"]')?.content ||
+            document.querySelector("h1")?.innerText ||
+            document.title ||
+            "N/A";
+  
+          const getImage = () =>
+            document.querySelector('meta[property="og:image"]')?.content ||
+            Array.from(document.images)
+              .filter((img) => img.width > 200 && img.height > 200)
+              .sort((a, b) => b.width * b.height - a.width * a.height)[0]?.src ||
+            "N/A";
+  
+          const getPrice = () => {
+            const priceSelectors = [
+              "._30jeq3", // Flipkart price
+              ".price", // Generic class
+              '[class*="price"]', // Fallback
+            ];
+            for (const selector of priceSelectors) {
+              const price = document.querySelector(selector)?.innerText;
+              if (price) return price;
+            }
+  
+            const bodyText = document.body.innerText;
+            const priceMatch =
+              bodyText.match(/₹\s?\d{1,3}(,\d{3})*(\.\d{2})?|₹\d+/) ||
+              bodyText.match(/\$\s?\d{1,3}(,\d{3})*(\.\d{2})?|\$\d+/) ||
+              bodyText.match(/Rs\.\s?\d+/);
+            return priceMatch ? priceMatch[0] : "N/A";
+          };
+  
+          return {
+            title: getTitle(),
+            image: getImage(),
+            price: getPrice(),
+          };
         });
   
         await browser.close();
@@ -64,9 +115,6 @@ const postCtrl = {
           productPrice: metadata.price || null,
           productURL,
         };
-  
-        // If product image is found and it's not already uploaded to S3, upload it using middleware approach
-        // BUT since you handle uploads only via `req.files`, we’ll just store the remote image URL as is
       }
   
       const newPost = new Posts({
@@ -85,7 +133,6 @@ const postCtrl = {
           url: productData.productURL,
         },
       });
-      
   
       await newPost.save();
   
@@ -98,6 +145,7 @@ const postCtrl = {
       return res.status(500).json({ msg: "Server error. Please try again later." });
     }
   },
+  
   
   
 
@@ -181,7 +229,15 @@ const postCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-
+  deleteAllPosts: async (req, res) => {
+    try {
+      await Posts.deleteMany({});
+      res.json({ msg: "All posts have been deleted successfully." });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  
   
 
   likePost: async (req, res) => {
