@@ -18,7 +18,7 @@
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
-    "express": "^4.17.1",
+    "express": "^4.21.2",
     "express-session": "^1.18.1",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^8.9.3",
@@ -29,6 +29,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-instagram": "^1.0.0",
+    "puppeteer": "^24.6.1",
     "socket.io": "^4.0.1"
   }
 }

@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const { Schema } = mongoose;
+const mongoose = require("mongoose")
+const { Schema } = mongoose
 
 const postSchema = new Schema(
   {
@@ -31,10 +31,18 @@ const postSchema = new Schema(
         ref: "user",
       },
     ],
+    // New product-related fields
+    product: {
+      title: String,
+      price: String,
+      image: String,
+      url: String
+    }
+    
   },
   {
     timestamps: true,
-  }
-);
+  },
+)
 
-module.exports = mongoose.model("Posts", postSchema);
+module.exports = mongoose.model("Posts", postSchema)
