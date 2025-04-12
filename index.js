@@ -41,6 +41,8 @@ io.on("connection", (socket) => {
 //#endregion
 
 //#region // !Routes
+
+app.use("/api", require("./routes/blogRouter"));
 app.use("/api", require("./routes/authRouter"));
 app.use("/api", require("./routes/userRouter"));
 app.use("/api", require("./routes/postRouter"));
@@ -52,7 +54,7 @@ app.use("/api", require("./routes/productRouter"));
 app.use("/api", require("./routes/referralRouter"));
 app.use("/api", require("./routes/orderRouter"));
 app.use("/api", require("./routes/brandsApi"));
-app.use("/api", require("./routes/blogRouter"));
+
 //#endregion
 
 // Passport setup
