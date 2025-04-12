@@ -1,6 +1,7 @@
 const Posts = require("../models/postModel");
 const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
+const Referral = require("../models/referralModel");
 const mongoose = require("mongoose");
 const puppeteer = require("puppeteer");
 
@@ -34,87 +35,24 @@ const postCtrl = {
       const { content, caption, body, tags } = req.body;
       console.log("Extracted data:", { content, caption, body, tags });
   
-      let productData = {};
-  
-      // Extract product metadata from URL if present in caption
-      const urlMatch = caption?.match(/(https?:\/\/[^\s]+)/);
-      if (urlMatch && urlMatch[0]) {
-        const productURL = urlMatch[0];
-        console.log("Detected product URL:", productURL);
-  
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-blink-features=AutomationControlled",
-          ],
-        });
-  
-        const page = await browser.newPage();
-  
-        await page.setUserAgent(
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        );
-  
-        await page.setExtraHTTPHeaders({
-          "Accept-Language": "en-US,en;q=0.9",
-        });
-  
-        await page.setViewport({ width: 1280, height: 800 });
-  
-        await page.goto(productURL, { waitUntil: "networkidle2", timeout: 30000 });
-  
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // wait for content to load
-  
-        const metadata = await page.evaluate(() => {
-          const getTitle = () =>
-            document.querySelector('meta[property="og:title"]')?.content ||
-            document.querySelector("h1")?.innerText ||
-            document.title ||
-            "N/A";
-  
-          const getImage = () =>
-            document.querySelector('meta[property="og:image"]')?.content ||
-            Array.from(document.images)
-              .filter((img) => img.width > 200 && img.height > 200)
-              .sort((a, b) => b.width * b.height - a.width * a.height)[0]?.src ||
-            "N/A";
-  
-          const getPrice = () => {
-            const priceSelectors = [
-              "._30jeq3", // Flipkart price
-              ".price", // Generic class
-              '[class*="price"]', // Fallback
-            ];
-            for (const selector of priceSelectors) {
-              const price = document.querySelector(selector)?.innerText;
-              if (price) return price;
-            }
-  
-            const bodyText = document.body.innerText;
-            const priceMatch =
-              bodyText.match(/₹\s?\d{1,3}(,\d{3})*(\.\d{2})?|₹\d+/) ||
-              bodyText.match(/\$\s?\d{1,3}(,\d{3})*(\.\d{2})?|\$\d+/) ||
-              bodyText.match(/Rs\.\s?\d+/);
-            return priceMatch ? priceMatch[0] : "N/A";
-          };
-  
-          return {
-            title: getTitle(),
-            image: getImage(),
-            price: getPrice(),
-          };
-        });
-  
-        await browser.close();
-  
-        productData = {
-          productTitle: metadata.title || null,
-          productImage: metadata.image || null,
-          productPrice: metadata.price || null,
-          productURL,
-        };
+      // Check if caption contains a referral link
+      let productData = null;
+      if (caption) {
+        // Extract referral link from caption
+        const referralCodeMatch = caption.match(/referralCode=([a-zA-Z0-9]+)/);
+        
+        if (referralCodeMatch && referralCodeMatch[1]) {
+          const referralCode = referralCodeMatch[1];
+          console.log("Found referral code in caption:", referralCode);
+          
+          // Find the referral in the database
+          const referral = await Referral.findOne({ referralCode });
+          
+          if (referral && referral.product) {
+            console.log("Found matching referral with product data:", referral.product);
+            productData = referral.product;
+          }
+        }
       }
   
       const newPost = new Posts({
@@ -126,12 +64,8 @@ const postCtrl = {
         video,
         brandLogo: brandLogoFile ? brandLogoFile.location : null,
         user: req.user._id,
-        product: {
-          title: productData.productTitle,
-          image: productData.productImage,
-          price: productData.productPrice,
-          url: productData.productURL,
-        },
+        // Add product data if found
+        product: productData
       });
   
       await newPost.save();
@@ -146,9 +80,6 @@ const postCtrl = {
     }
   },
   
-  
-  
-
   updatePost: async (req, res) => {
     try {
       const mediaFiles = req.files?.media || [];
@@ -229,6 +160,8 @@ const postCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+
+  
   deleteAllPosts: async (req, res) => {
     try {
       await Posts.deleteMany({});

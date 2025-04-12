@@ -29,7 +29,12 @@ const referralSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-
+    product: {
+      title: String,
+      price: String,
+      image: String,
+      url: String
+    },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

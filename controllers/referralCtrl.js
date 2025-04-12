@@ -5,95 +5,118 @@ const Users = require("../models/userModel");
 const Brand = require("../models/BrandModel"); // Added Brand model import
 const generateReferralCode = require("../utils/generateReferralCode");
 
+const puppeteer = require("puppeteer"); // Make sure this is imported
+
+
 exports.createReferral = async (req, res) => {
   try {
     const { userId, productUrl } = req.body;
 
-    // Validate the userId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid userId" });
+      return res.status(400).json({ success: false, message: "Invalid userId" });
     }
 
-    // Query the Users collection to get the username
     const user = await Users.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     const username = user.username;
-
-    // Parse the URL
-    let urlParts = new URL(productUrl);
-    let baseUrl = urlParts.origin;
-    let path = urlParts.pathname;
-    
-    console.log("Product URL:", productUrl);
+    const urlParts = new URL(productUrl);
+    const baseUrl = urlParts.origin;
+    const path = urlParts.pathname;
 
     const brands = await Brand.find({}, "brandWebsite");
-    console.log("Available brands in DB:", brands.map(b => b.brandWebsite));
-    
-    function getDomain(url) {
+
+    const getDomain = (url) => {
       try {
         return new URL(url).hostname.replace("www.", "");
-      } catch (error) {
-        console.error("Invalid URL:", url);
+      } catch {
         return null;
       }
-    }
-    
+    };
+
     const productDomain = getDomain(productUrl);
-    console.log("Extracted Product Domain:", productDomain);
-    
-    const matchedBrand = brands.find(brand => {
+    const matchedBrand = brands.find((brand) => {
       const brandDomain = getDomain(brand.brandWebsite);
       return brandDomain && productDomain.includes(brandDomain);
     });
-    
+
     const brandId = matchedBrand ? matchedBrand._id : null;
-    
-    console.log("Matched Brand Website:", matchedBrand?.brandWebsite);
-    console.log("Final brandId:", brandId);
-    
-
-    // Generate a unique referral code
     const referralCode = generateReferralCode();
-
-    // Check if the referral code already exists
     const existingReferral = await Referral.findOne({ referralCode });
+
     if (existingReferral) {
-      return res.status(400).json({ message: "Referral code already exists" });
+      return res.status(400).json({ success: false, message: "Referral code already exists" });
     }
 
-    // Construct the referral link using the full URL (base + path)
     const referralLink = `${baseUrl}${path}?referralCode=${referralCode}`;
 
-    // Create the new referral object
+    // Puppeteer scrape logic
+    const browser = await puppeteer.launch({ headless: "new" });
+    const page = await browser.newPage();
+    await page.goto(productUrl, { waitUntil: "domcontentloaded", timeout: 0 });
+
+    // Scrape data
+    const productData = await page.evaluate(() => {
+      const title = document.querySelector("#productTitle")?.textContent?.trim();
+      const price =
+        document.querySelector(".a-price .a-offscreen")?.textContent?.trim() ||
+        document.querySelector("#priceblock_ourprice")?.textContent?.trim();
+      const image = document.querySelector("#landingImage")?.src;
+
+      return {
+        productTitle: title || null,
+        productPrice: price || null,
+        productImage: image || null,
+        productURL: window.location.href,
+      };
+    });
+
+    await browser.close();
+
+    // Create Referral object
     const referral = new Referral({
       userId,
-      brandId, // This will be null if no matching brand was found
+      brandId,
       username,
       referralCode,
       referralLink,
       iscount: 0,
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      product: {
+        title: productData.productTitle,
+        image: productData.productImage,
+        price: productData.productPrice,
+        url: productData.productURL,
+      },
     });
-
-    console.log("Referral to be saved:", referral);
 
     await referral.save();
 
-    // Return the response with the referral and username
-    res.status(201).json({
+    return res.status(201).json({
+      success: true,
       message: "Referral created successfully",
       referral,
       referralLink,
-      username,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+      },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error creating referral" });
+    console.error("Referral creation error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create referral",
+      error: error.message,
+    });
   }
 };
+
+
 
 exports.getReferralsByUserId = async (req, res) => {
   try {
