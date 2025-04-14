@@ -29,6 +29,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-instagram": "^1.0.0",
+    "playwright": "^1.51.1",
     "puppeteer": "^24.6.1",
     "socket.io": "^4.0.1"
   }

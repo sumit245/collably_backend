@@ -47,7 +47,7 @@ const upload = multer({
   { name: "productPhoto", maxCount: 1 },
   {name: "avatar", maxCount: 1 },
   { name: "blogImage", maxCount: 1 },
-  { name: "productImage", maxCount: 1 },
+  { name: "image", maxCount: 1 },
 ]);
 
 // ✅ Middleware for handling upload errors
