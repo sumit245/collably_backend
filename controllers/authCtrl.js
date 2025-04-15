@@ -77,7 +77,7 @@ const authCtrl = {
       console.log("📦 req.body:", req.body);
       console.log("🖼 req.files:", req.files); // for debugging
   
-      // ✅ Handle avatar upload like brandLogo
+      // ✅ Handle avatar upload
       let avatar = null;
       if (req.files && req.files.avatar && req.files.avatar.length > 0) {
         avatar = req.files.avatar[0].location;
@@ -103,13 +103,14 @@ const authCtrl = {
         return res.status(400).json({ msg: "This mobile number is already registered." });
       }
   
-      if (password.length < 6) {
-        return res.status(400).json({ msg: "Password must be at least 6 characters long." });
+      let passwordHash = null;
+      if (password) {
+        if (password.length < 6) {
+          return res.status(400).json({ msg: "Password must be at least 6 characters long." });
+        }
+        passwordHash = await bcrypt.hash(password, 12);
       }
   
-      const passwordHash = await bcrypt.hash(password, 12);
-  
-      // ✅ Include avatar in user creation
       const newUser = new Users({
         fullname,
         username: newUserName,
@@ -136,7 +137,7 @@ const authCtrl = {
         access_token,
         user: {
           ...newUser._doc,
-          password: "", // hide password
+          password: "", // Hide password
         },
       });
     } catch (err) {
@@ -144,6 +145,7 @@ const authCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  
   
 
   //user delete 
