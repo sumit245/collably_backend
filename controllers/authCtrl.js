@@ -56,17 +56,29 @@ const authCtrl = {
     });
   },
 
-  instagramLogin: passport.authenticate("instagram", {
-    scope: ["user_profile", "user_media"],
-  }),
+  instagramLogin: passport.authenticate("instagram"),
 
   instagramCallback: (req, res) => {
     passport.authenticate("instagram", {
       failureRedirect: "/login",
     })(req, res, () => {
-      res.redirect("/profile");
+      const user = req.user;
+      console.log("✅ Instagram Callback Hit");
+      console.log("✅ req.user:", user);
+  
+      if (!user || !user.accessToken) {
+        return res.status(400).json({ msg: "Instagram authentication failed." });
+      }
+  
+      res.json({
+        msg: "Instagram Login Successful!",
+        access_token: user.accessToken,
+        profile: user.profile,
+      });
     });
   },
+  
+  
 
   // User registration route
   register: async (req, res) => {
