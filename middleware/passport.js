@@ -10,8 +10,8 @@ const FacebookStrategy = require("passport-facebook").Strategy;
 passport.use(
   new FacebookStrategy(
     {
-      clientID: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
+      clientID: process.env.APP_ID,
+      clientSecret: process.env.APP_SECRET,
       callbackURL: "https://newapp.collably.in/api/auth/facebook/callback",
       profileFields: ["id", "displayName", "emails"],
     },
