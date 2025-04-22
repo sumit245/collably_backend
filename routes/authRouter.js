@@ -136,58 +136,52 @@ router.get(
     "/auth/instagram/callback",
     passport.authenticate("facebook", { failureRedirect: "/login", session: false }),
     async (req, res) => {
+      const logs = [];
       try {
         const { accessToken, profile } = req.user;
-  
-        const posts = [];
-        const debugLogs = [];
+        logs.push("✅ Facebook login successful");
+        logs.push(`Access Token: ${accessToken.slice(0, 10)}...`);
   
         // Step 1: Get Pages linked to user
         const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
         const pagesData = await pagesRes.json();
+        logs.push("📄 Pages fetched");
   
         if (!pagesData.data || pagesData.data.length === 0) {
-          return res.json({
-            message: "Facebook login successful",
-            profile,
-            accessToken,
-            posts: [],
-            debug: "No Facebook Pages found. Make sure your IG account is linked to a Facebook Page.",
-          });
+          logs.push("❌ No Facebook Pages found for this user.");
+          return res.json({ message: "Facebook login successful", profile, accessToken, posts: [], logs });
         }
   
-        // Step 2: Loop through Pages
+        const posts = [];
+  
         for (const page of pagesData.data) {
           const pageToken = page.access_token;
+          logs.push(`🔍 Checking Page: ${page.name} (${page.id})`);
   
-          // Step 3: Get IG business account ID
-          const igRes = await fetch(
-            `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`
-          );
+          // Get Instagram account linked to page
+          const igRes = await fetch(`https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
           const igData = await igRes.json();
-          const igId = igData?.instagram_business_account?.id;
+          logs.push(`IG Data for page: ${JSON.stringify(igData)}`);
   
+          const igId = igData?.instagram_business_account?.id;
           if (!igId) {
-            debugLogs.push(`Page "${page.name}" has no linked IG account`);
+            logs.push(`❌ No Instagram business account linked to page ${page.name}`);
             continue;
           }
   
-          // Step 4: Get IG Username
-          const usernameRes = await fetch(
-            `https://graph.facebook.com/v19.0/${igId}?fields=username&access_token=${pageToken}`
-          );
+          logs.push(`✅ Found IG business account: ${igId}`);
+  
+          // Get Instagram username
+          const usernameRes = await fetch(`https://graph.facebook.com/v19.0/${igId}?fields=username&access_token=${pageToken}`);
           const usernameData = await usernameRes.json();
-          const igUsername = usernameData?.username || null;
+          logs.push(`IG Username Response: ${JSON.stringify(usernameData)}`);
   
-          // Step 5: Get IG media
-          const mediaRes = await fetch(
-            `https://graph.facebook.com/v19.0/${igId}/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${pageToken}`
-          );
+          const igUsername = usernameData?.username || "unknown";
+  
+          // Get media
+          const mediaRes = await fetch(`https://graph.facebook.com/v19.0/${igId}/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${pageToken}`);
           const mediaData = await mediaRes.json();
-  
-          if (!mediaData.data || mediaData.data.length === 0) {
-            debugLogs.push(`No media found for IG account ${igUsername || igId}`);
-          }
+          logs.push(`Media Data Response: ${JSON.stringify(mediaData)}`);
   
           posts.push({
             pageName: page.name,
@@ -197,18 +191,14 @@ router.get(
           });
         }
   
-        res.json({
-          message: "Facebook login successful",
-          profile,
-          accessToken,
-          posts,
-          debugLogs,
-        });
+        return res.json({ message: "Facebook login successful", profile, accessToken, posts, logs });
       } catch (err) {
         console.error("Instagram Fetch Error:", err);
-        res.status(500).json({ error: "Something went wrong while fetching Instagram data." });
+        logs.push("❌ Error occurred: " + err.message);
+        return res.status(500).json({ message: "Error while fetching Instagram data", logs });
       }
     }
   );
+  
   
 module.exports = router;
