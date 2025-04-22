@@ -49,8 +49,8 @@ passport.use(
   "instagram",
   new InstagramStrategy(
     {
-      clientID: process.env.APP_ID,
-      clientSecret: process.env.APP_SECRET,
+      clientID: process.env.INSTA_APP_ID,
+      clientSecret: process.env.INSTA_APP_SECRET,
       callbackURL: "https://newapp.collably.in/api/auth/instagram/callback",
     },
     (accessToken, refreshToken, profile, done) => {
