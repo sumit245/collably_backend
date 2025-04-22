@@ -27,7 +27,7 @@ passport.use(
     {
       clientID: process.env.APP_ID,
       clientSecret: process.env.APP_SECRET,
-      callbackURL: "http://localhost:5000/api/auth/instagram/callback",
+      callbackURL: "https://newapp.collably.in/api/auth/instagram/callback",
     },
     (accessToken, refreshToken, profile, done) => {
       console.log("✅ Instagram Access Token:", accessToken);
