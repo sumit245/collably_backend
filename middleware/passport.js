@@ -2,11 +2,9 @@ require("dotenv").config();
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const InstagramStrategy = require("passport-instagram").Strategy;
-// const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const YouTubeStrategy = require("passport-google-oauth20").Strategy; 
 const FacebookStrategy = require("passport-facebook").Strategy;
-// const passport = require("passport");
 
+// Facebook Strategy
 passport.use(
   new FacebookStrategy(
     {
@@ -22,13 +20,7 @@ passport.use(
   )
 );
 
-passport.serializeUser(function (user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function (obj, done) {
-  done(null, obj);
-});
+// YouTube Strategy
 passport.use(
   "youtube",
   new GoogleStrategy(
@@ -44,7 +36,7 @@ passport.use(
   )
 );
 
-
+// Instagram Strategy
 passport.use(
   "instagram",
   new InstagramStrategy(
@@ -56,14 +48,12 @@ passport.use(
     (accessToken, refreshToken, profile, done) => {
       console.log("✅ Instagram Access Token:", accessToken);
       console.log("✅ Instagram Profile:", profile);
-      // Send the user object to req.user
       return done(null, { accessToken, profile });
     }
   )
 );
 
-
-// required for session support
+// Session handling
 passport.serializeUser((user, done) => {
   done(null, user);
 });
