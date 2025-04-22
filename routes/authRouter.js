@@ -51,21 +51,37 @@ router.get("/auth/youtube", passport.authenticate("youtube", {
   );
   
   // Facebook callback
-  router.get(
+ // Facebook callback
+router.get(
     "/auth/facebook/callback",
     passport.authenticate("facebook", {
       failureRedirect: "/login",
       session: false,
     }),
-    (req, res) => {
-      const { profile, accessToken } = req.user;
-      res.json({
-        message: "Facebook login successful",
-        profile,
-        accessToken,
-      });
+    async (req, res) => {
+      try {
+        const { profile, accessToken } = req.user;
+  
+        // 🔥 Fetch Facebook user posts directly from backend
+        const postsResponse = await fetch(
+          `https://graph.facebook.com/me/posts?fields=id,message,story,created_time,full_picture,permalink_url&access_token=${accessToken}`
+        );
+  
+        const postsData = await postsResponse.json();
+  
+        res.json({
+          message: "Facebook login successful",
+          profile,
+          accessToken,
+          posts: postsData.data, // <-- direct post array
+        });
+      } catch (err) {
+        console.error("Error fetching user posts:", err);
+        res.status(500).json({ error: "Failed to fetch user posts." });
+      }
     }
   );
+  
   router.get("/auth/facebook/fetch", async (req, res) => {
     try {
       const token = req.query.accessToken;
