@@ -129,33 +129,18 @@ router.get("/auth/google", authCtrl.googleLogin);
 router.get("/auth/google/callback", authCtrl.googleCallback);
 
 
-router.get("/auth/instagram", authCtrl.instagramLogin);
+router.get("/auth/instagram", passport.authenticate("facebook"));
 
-// Instagram Callback + IG Post Fetch + Webhook GET Verify
-router.get("/auth/instagram/callback", async (req, res, next) => {
-  // Handle webhook verification GET
-  if (req.method === "GET" && req.query["hub.mode"] === "subscribe") {
-    const { "hub.verify_token": token, "hub.challenge": challenge } = req.query;
-
-    if (token === "collabinstatok") {
-      return res.status(200).send(challenge);
-    } else {
-      return res.status(403).send("Verification token mismatch");
-    }
-  }
-
-  // Authenticate user
-  passport.authenticate("instagram", { session: false }, async (err, user) => {
-    if (err || !user) {
-      return res.redirect("/login");
-    }
-
+// IG Callback
+router.get(
+  "/auth/instagram/callback",
+  passport.authenticate("facebook", { failureRedirect: "/login", session: false }),
+  async (req, res) => {
     try {
-      const { accessToken, profile } = user;
+      const { accessToken, profile } = req.user;
 
-      const pagesRes = await fetch(
-        `https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`
-      );
+      // Step 1: Get Facebook Pages
+      const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
       const pagesData = await pagesRes.json();
 
       const posts = [];
@@ -163,6 +148,7 @@ router.get("/auth/instagram/callback", async (req, res, next) => {
       for (const page of pagesData.data || []) {
         const pageToken = page.access_token;
 
+        // Step 2: Get Instagram Business Account ID
         const igRes = await fetch(
           `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`
         );
@@ -171,8 +157,9 @@ router.get("/auth/instagram/callback", async (req, res, next) => {
         const igId = igData?.instagram_business_account?.id;
         if (!igId) continue;
 
+        // Step 3: Fetch IG Media
         const mediaRes = await fetch(
-          `https://graph.facebook.com/v19.0/${igId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&access_token=${pageToken}`
+          `https://graph.facebook.com/v19.0/${igId}/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${pageToken}`
         );
         const mediaData = await mediaRes.json();
 
@@ -193,7 +180,7 @@ router.get("/auth/instagram/callback", async (req, res, next) => {
       console.error("Instagram fetch error:", err);
       res.status(500).json({ error: "Failed to fetch Instagram posts." });
     }
-  })(req, res, next);
-});
+  }
+);
 
 module.exports = router;

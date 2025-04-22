@@ -12,13 +12,22 @@ passport.use(
       clientSecret: process.env.APP_SECRET,
       callbackURL: "https://newapp.collably.in/api/auth/facebook/callback",
       profileFields: ["id", "displayName", "emails"],
-      scope: ["email", "public_profile", "user_posts"],
+      scope: ["email", "public_profile", "pages_show_list", "instagram_basic", "pages_read_engagement", "instagram_content_publish"],
     },
     function (accessToken, refreshToken, profile, done) {
       return done(null, { profile, accessToken });
     }
   )
 );
+
+passport.serializeUser(function (user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function (obj, done) {
+  done(null, obj);
+});
+
 
 // YouTube Strategy
 passport.use(
@@ -37,29 +46,29 @@ passport.use(
 );
 
 // Instagram Strategy
-passport.use(
-  "instagram",
-  new InstagramStrategy(
-    {
-      clientID: process.env.INSTA_APP_ID,
-      clientSecret: process.env.INSTA_APP_SECRET,
-      callbackURL: "https://newapp.collably.in/api/auth/instagram/callback",
-    },
-    (accessToken, refreshToken, profile, done) => {
-      console.log("✅ Instagram Access Token:", accessToken);
-      console.log("✅ Instagram Profile:", profile);
-      return done(null, { accessToken, profile });
-    }
-  )
-);
+// passport.use(
+//   "instagram",
+//   new InstagramStrategy(
+//     {
+//       clientID: process.env.INSTA_APP_ID,
+//       clientSecret: process.env.INSTA_APP_SECRET,
+//       callbackURL: "https://newapp.collably.in/api/auth/instagram/callback",
+//     },
+//     (accessToken, refreshToken, profile, done) => {
+//       console.log("✅ Instagram Access Token:", accessToken);
+//       console.log("✅ Instagram Profile:", profile);
+//       return done(null, { accessToken, profile });
+//     }
+//   )
+// );
 
-// Session handling
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
+// // Session handling
+// passport.serializeUser((user, done) => {
+//   done(null, user);
+// });
 
-passport.deserializeUser((user, done) => {
-  done(null, user);
-});
+// passport.deserializeUser((user, done) => {
+//   done(null, user);
+// });
 
 module.exports = passport;
