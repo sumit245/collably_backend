@@ -4,7 +4,30 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const InstagramStrategy = require("passport-instagram").Strategy;
 // const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const YouTubeStrategy = require("passport-google-oauth20").Strategy; 
+const FacebookStrategy = require("passport-facebook").Strategy;
+// const passport = require("passport");
 
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+      callbackURL: "https://newapp.collably.in/api/auth/facebook/callback",
+      profileFields: ["id", "displayName", "emails"],
+    },
+    function (accessToken, refreshToken, profile, done) {
+      return done(null, { profile, accessToken });
+    }
+  )
+);
+
+passport.serializeUser(function (user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function (obj, done) {
+  done(null, obj);
+});
 passport.use(
   "youtube",
   new GoogleStrategy(

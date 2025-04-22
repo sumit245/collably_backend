@@ -43,7 +43,70 @@ router.get("/auth/youtube", passport.authenticate("youtube", {
       });
     }
   );
+  router.get(
+    "/auth/facebook",
+    passport.authenticate("facebook", {
+      scope: ["email", "pages_show_list", "instagram_basic", "pages_read_engagement"],
+    })
+  );
   
+  // Facebook callback
+  router.get(
+    "/auth/facebook/callback",
+    passport.authenticate("facebook", {
+      failureRedirect: "/login",
+      session: false,
+    }),
+    (req, res) => {
+      const { profile, accessToken } = req.user;
+      res.json({
+        message: "Facebook login successful",
+        profile,
+        accessToken,
+      });
+    }
+  );
+  router.get("/auth/facebook/fetch", async (req, res) => {
+    try {
+      const token = req.query.accessToken;
+  
+      const response = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${token}`);
+      const { data: pages } = await response.json();
+  
+      const igAccounts = [];
+  
+      for (const page of pages) {
+        const pageId = page.id;
+        const pageToken = page.access_token;
+  
+        // Check if IG is linked
+        const igRes = await fetch(
+          `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${pageToken}`
+        );
+        const { instagram_business_account } = await igRes.json();
+  
+        if (instagram_business_account?.id) {
+          const igId = instagram_business_account.id;
+  
+          const igDetailsRes = await fetch(
+            `https://graph.facebook.com/v19.0/${igId}?fields=username,followers_count,media_count,profile_picture_url&access_token=${pageToken}`
+          );
+          const igDetails = await igDetailsRes.json();
+  
+          igAccounts.push({
+            pageName: page.name,
+            igDetails,
+          });
+        }
+      }
+  
+      res.json({ success: true, data: igAccounts });
+    } catch (error) {
+      console.error("Facebook fetch error:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch Facebook/IG data" });
+    }
+  });
+    
   
   
 router.get("/auth/google", authCtrl.googleLogin);
