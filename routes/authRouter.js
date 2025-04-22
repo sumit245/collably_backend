@@ -139,25 +139,39 @@ router.get(
     try {
       const { accessToken, profile } = req.user;
 
-      // Step 1: Get Facebook Pages
+      const posts = [];
+
+      // Step 1: Get Pages linked to user
       const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
       const pagesData = await pagesRes.json();
 
-      const posts = [];
+      if (!pagesData.data || pagesData.data.length === 0) {
+        return res.json({
+          message: "Facebook login successful",
+          profile,
+          accessToken,
+          posts: [],
+          debug: "No Facebook Pages found. Make sure your IG account is linked to a Facebook Page.",
+        });
+      }
 
-      for (const page of pagesData.data || []) {
+      // Step 2: Loop through each Page and get IG posts
+      for (const page of pagesData.data) {
         const pageToken = page.access_token;
 
-        // Step 2: Get Instagram Business Account ID
+        // Get Instagram Business Account ID
         const igRes = await fetch(
           `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`
         );
         const igData = await igRes.json();
-
         const igId = igData?.instagram_business_account?.id;
-        if (!igId) continue;
 
-        // Step 3: Fetch IG Media
+        if (!igId) {
+          console.log(`Page ${page.name} has no linked IG account`);
+          continue;
+        }
+
+        // Get IG Posts
         const mediaRes = await fetch(
           `https://graph.facebook.com/v19.0/${igId}/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${pageToken}`
         );
@@ -171,16 +185,15 @@ router.get(
       }
 
       res.json({
-        message: "Instagram login successful",
+        message: "Facebook login successful",
         profile,
         accessToken,
-        instagramPosts: posts,
+        posts, // This now contains Instagram media grouped by Facebook Page
       });
     } catch (err) {
-      console.error("Instagram fetch error:", err);
-      res.status(500).json({ error: "Failed to fetch Instagram posts." });
+      console.error("IG Fetch Error:", err);
+      res.status(500).json({ error: "Something went wrong while fetching Instagram data." });
     }
   }
 );
-
 module.exports = router;
