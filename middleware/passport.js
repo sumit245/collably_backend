@@ -14,6 +14,7 @@ passport.use(
       clientSecret: process.env.APP_SECRET,
       callbackURL: "https://newapp.collably.in/api/auth/facebook/callback",
       profileFields: ["id", "displayName", "emails"],
+      scope: ["email", "public_profile", "user_posts"],
     },
     function (accessToken, refreshToken, profile, done) {
       return done(null, { profile, accessToken });
