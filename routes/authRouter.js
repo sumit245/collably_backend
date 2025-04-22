@@ -46,7 +46,7 @@ router.get("/auth/youtube", passport.authenticate("youtube", {
   router.get(
     "/auth/facebook",
     passport.authenticate("facebook", {
-      scope: ["public_profile", "email"],
+      scope: ["public_profile", "email","user_posts"],
     })
   );
   
