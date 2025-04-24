@@ -56,34 +56,46 @@ const authCtrl = {
     });
   },
 
-  instagramLogin: passport.authenticate("instagram", {
-    scope: ["user_profile", "user_media"],
-  }),
+  instagramLogin: passport.authenticate("instagram"),
 
   instagramCallback: (req, res) => {
     passport.authenticate("instagram", {
       failureRedirect: "/login",
     })(req, res, () => {
-      res.redirect("/profile");
+      const user = req.user;
+      console.log("✅ Instagram Callback Hit");
+      console.log("✅ req.user:", user);
+  
+      if (!user || !user.accessToken) {
+        return res.status(400).json({ msg: "Instagram authentication failed." });
+      }
+  
+      res.json({
+        msg: "Instagram Login Successful!",
+        access_token: user.accessToken,
+        profile: user.profile,
+      });
     });
   },
+  
+  
 
   // User registration route
   register: async (req, res) => {
     try {
       const { fullname, username, email, contactNumber, password, gender } = req.body;
   
-      console.log("➡️ Incoming Register Request");
+      console.log("➡ Incoming Register Request");
       console.log("📦 req.body:", req.body);
       console.log("🖼 req.files:", req.files); // for debugging
   
-      // ✅ Handle avatar upload like brandLogo
+      // ✅ Handle avatar upload
       let avatar = null;
       if (req.files && req.files.avatar && req.files.avatar.length > 0) {
         avatar = req.files.avatar[0].location;
         console.log("✅ Avatar uploaded to:", avatar);
       } else {
-        console.warn("⚠️ No avatar uploaded or field not recognized.");
+        console.warn("⚠ No avatar uploaded or field not recognized.");
       }
   
       let newUserName = username.toLowerCase().replace(/ /g, "");
@@ -103,13 +115,14 @@ const authCtrl = {
         return res.status(400).json({ msg: "This mobile number is already registered." });
       }
   
-      if (password.length < 6) {
-        return res.status(400).json({ msg: "Password must be at least 6 characters long." });
+      let passwordHash = null;
+      if (password) {
+        if (password.length < 6) {
+          return res.status(400).json({ msg: "Password must be at least 6 characters long." });
+        }
+        passwordHash = await bcrypt.hash(password, 12);
       }
   
-      const passwordHash = await bcrypt.hash(password, 12);
-  
-      // ✅ Include avatar in user creation
       const newUser = new Users({
         fullname,
         username: newUserName,
@@ -136,7 +149,7 @@ const authCtrl = {
         access_token,
         user: {
           ...newUser._doc,
-          password: "", // hide password
+          password: "", // Hide password
         },
       });
     } catch (err) {
@@ -144,6 +157,7 @@ const authCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  
   
 
   //user delete 

@@ -255,6 +255,7 @@ const postCtrl = {
 
       res.json({
         msg: "User posts fetched successfully",
+        result: posts.length,
         posts,
         totalPosts,
         totalPages: Math.ceil(totalPosts / limit),
