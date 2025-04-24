@@ -19,22 +19,32 @@ exports.createReferral = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const username = user.username;
+    const username = user.fullname;
+    const referralCode = generateReferralCode();
 
-    // Get brand match
-    let urlParts = new URL(productUrl);
-    let baseUrl = urlParts.origin;
-    let path = urlParts.pathname;
+    const existingReferral = await Referral.findOne({ referralCode });
+    if (existingReferral) {
+      return res.status(400).json({ message: "Referral code already exists" });
+    }
 
+    // Parse product URL
+    const parsedUrl = new URL(productUrl);
+
+    // Inject both creator username and referral code in query
+    parsedUrl.searchParams.set("c", username);
+    parsedUrl.searchParams.set("referralCode", referralCode);
+
+    const referralLink = parsedUrl.toString();
+
+    // Brand match (optional)
     const brands = await Brand.find({}, "brandWebsite");
-
-    function getDomain(url) {
+    const getDomain = url => {
       try {
         return new URL(url).hostname.replace("www.", "");
-      } catch (error) {
+      } catch {
         return null;
       }
-    }
+    };
 
     const productDomain = getDomain(productUrl);
     const matchedBrand = brands.find(brand => {
@@ -43,11 +53,6 @@ exports.createReferral = async (req, res) => {
     });
 
     const brandId = matchedBrand ? matchedBrand._id : null;
-
-    // Generate referral code
-    const referralCode = generateReferralCode();
-
-    const referralLink = `${baseUrl}${path}?referralCode=${referralCode}`;
 
     const referral = new Referral({
       userId,
@@ -64,159 +69,7 @@ exports.createReferral = async (req, res) => {
 
     await referral.save();
 
-    // Scrape product metadata
-    let productData = { title: null, price: null, image: null, url: productUrl };
-
-    try {
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-blink-features=AutomationControlled"],
-      });
-
-      const page = await browser.newPage();
-
-      await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-      await page.setExtraHTTPHeaders({ "Accept-Language": "en-US,en;q=0.9" });
-      await page.setViewport({ width: 1280, height: 800 });
-
-      await page.goto(productUrl, { waitUntil: "networkidle2", timeout: 30000 });
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      const metadata = await page.evaluate(() => {
-        const getTitle = () =>
-          document.querySelector('meta[property="og:title"]')?.content ||
-          document.querySelector("h1")?.innerText ||
-          document.title ||
-          null;
-
-        const getImage = () =>
-          document.querySelector('meta[property="og:image"]')?.content ||
-          Array.from(document.images)
-            .filter((img) => img.width > 200 && img.height > 200)
-            .sort((a, b) => b.width * b.height - a.width * a.height)[0]?.src || null;
-
-        const getPrice = () => {
-          const priceSelectors = [
-            "._30jeq3",
-            ".price",
-            '[class*="price"]',
-          ];
-          for (const selector of priceSelectors) {
-            const price = document.querySelector(selector)?.innerText;
-            if (price) return price;
-          }
-
-          const bodyText = document.body.innerText;
-          const priceMatch =
-            bodyText.match(/₹\s?\d{1,3}(,\d{3})*(\.\d{2})?|₹\d+/) ||
-            bodyText.match(/\$\s?\d{1,3}(,\d{3})*(\.\d{2})?|\$\d+/) ||
-            bodyText.match(/Rs\.\s?\d+/);
-          return priceMatch ? priceMatch[0] : null;
-        };
-
-        return {
-          title: getTitle(),
-          image: getImage(),
-          price: getPrice(),
-        };
-      });
-
-      await browser.close();
-
-      // Initialize product data with scraped info
-      productData = {
-        title: metadata.title,
-        price: metadata.price,
-        image: metadata.image, // Original image URL
-        url: productUrl,
-      };
-
-      // Upload the product image to S3 if an image URL was found
-      if (metadata.image) {
-        try {
-          const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
-          const path = require("path");
-          const https = require("https");
-          const http = require("http");
-          const fs = require("fs");
-          const os = require("os");
-
-          // Create a temporary file path
-          const tempFilePath = path.join(os.tmpdir(), `product-${Date.now()}.jpg`);
-          
-          // Download the image to a temporary file
-          await new Promise((resolve, reject) => {
-            const protocol = metadata.image.startsWith('https') ? https : http;
-            const file = fs.createWriteStream(tempFilePath);
-            
-            protocol.get(metadata.image, (response) => {
-              if (response.statusCode !== 200) {
-                reject(new Error(`Failed to download image: ${response.statusCode}`));
-                return;
-              }
-              
-              response.pipe(file);
-              
-              file.on('finish', () => {
-                file.close();
-                resolve();
-              });
-            }).on('error', (err) => {
-              fs.unlink(tempFilePath, () => {});
-              reject(err);
-            });
-          });
-          
-          // Read the file
-          const fileContent = fs.readFileSync(tempFilePath);
-          
-          // Initialize S3 client (same as in your uploadMiddleware)
-          const s3 = new S3Client({
-            region: process.env.AWS_DEFAULT_REGION,
-            credentials: {
-              accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-              secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            },
-          });
-          
-          // Create a unique key for the image
-          const uniqueKey = `products/${Date.now()}${path.extname(metadata.image) || '.jpg'}`;
-          
-          // Upload to S3
-          const command = new PutObjectCommand({
-            Bucket: process.env.AWS_BUCKET,
-            Key: uniqueKey,
-            Body: fileContent,
-            ContentType: 'image/jpeg',
-          });
-          
-          await s3.send(command);
-          
-          // Clean up the temporary file
-          fs.unlinkSync(tempFilePath);
-          
-          // Update product data with S3 URL
-          productData.image = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${uniqueKey}`;
-          console.log('Product image uploaded to S3:', productData.image);
-        } catch (uploadError) {
-          console.error('Error uploading product image to S3:', uploadError);
-          // Keep the original image URL if upload fails
-        }
-      }
-
-      // Update referral with product info
-      await Referral.findByIdAndUpdate(referral._id, {
-        product: productData,
-      });
-
-      referral.product = productData;
-
-    } catch (scrapeErr) {
-      console.error("Error scraping product data:", scrapeErr);
-    }
-
-    return res.status(201).json({
-      success: true,
+    res.status(201).json({
       message: "Referral created successfully",
       referral,
       referralLink,
@@ -231,6 +84,7 @@ exports.createReferral = async (req, res) => {
     return res.status(500).json({ message: "Error creating referral" });
   }
 };
+
 
 exports.getReferralsByUserId = async (req, res) => {
   try {

@@ -57,13 +57,14 @@ const userCtrl = {
         gender,
         address,
         story,
-        website
+        website,
+        password
       } = req.body;
   
       console.log("📥 Update Request Body:", req.body);
       console.log("🖼 Update Request Files:", req.files);
   
-      let avatar = req.body.avatar; 
+      let avatar = req.body.avatar;
       if (req.files && req.files.avatar && req.files.avatar.length > 0) {
         avatar = req.files.avatar[0].location;
       }
@@ -80,6 +81,14 @@ const userCtrl = {
         ...(avatar && { avatar }),
       };
   
+      // ✅ If password is provided, validate & hash it
+      if (password) {
+        if (password.length < 6) {
+          return res.status(400).json({ msg: "Password must be at least 6 characters long." });
+        }
+        const passwordHash = await bcrypt.hash(password, 12);
+        updateFields.password = passwordHash;
+      }
   
       const updatedUser = await Users.findOneAndUpdate(
         { _id: req.user._id },
@@ -99,6 +108,7 @@ const userCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  
   
   
   // Follow a user
