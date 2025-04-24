@@ -66,58 +66,40 @@ const orderCtrl = {
   // Get orders by product's brand
   getBrandOrders: async (req, res) => {
     try {
-      // Filter orders where the product's brandId matches the brandId passed in the URL
-      const filteredOrders = orders.filter((order) =>
-        order.items.some(
-          (item) =>
-            item.product &&
-            item.product.brandId &&
-            item.product.brandId.toString() === req.params.brandId
-        ))
-
       const brandId = req.params.brandId;
-
-
-      const orders = await Order.find().populate({
-        path: "items.product", // Populate product in items
-        match: { brand: brandId }, // Ensure only products from the specific brand are included
-        populate: { path: "brand", select: "name" }, // Populate brand
-      });
-
-      // Log orders for debugging
-      console.log("Fetched Orders:", orders);
-
-      // Filter orders for that brand
-      const brandOrders = orders.filter((order) =>
-        order.items.some(
-          (item) =>
-            item.product &&
-            item.product.brand &&
-            item.product.brand._id.toString() === brandId
+  
+      const orders = await Order.find()
+        .populate({
+          path: "items.product",
+          populate: { path: "brandId", select: "name" }, // fix: populate brandId
+        })
+        .populate("user", "fullname"); // helpful if you want fullname
+  
+      const filteredOrders = orders.filter((order) =>
+        order.items.some((item) =>
+          item.product &&
+          item.product.brandId &&
+          item.product.brandId._id.toString() === brandId
         )
       );
-
+  
       if (filteredOrders.length > 0) {
-        // Map filtered orders to include the fullname
         const result = filteredOrders.map((order) => ({
           ...order.toObject(),
-          fullname: order.user.fullname, // Add the fullname field from populated user data
+          fullname: order.user?.fullname || "Unknown",
         }));
-
-        console.log("Filtered Orders with Fullnames: ", result); // Check the filtered data with fullnames
+  
+        console.log("Filtered Orders with Fullnames: ", result);
         return res.json(result);
       } else {
-        return res
-          .status(404)
-          .json({ message: "No orders found for this brand" });
+        return res.status(404).json({ message: "No orders found for this brand" });
       }
     } catch (err) {
       console.error("Error: ", err);
-      return res
-        .status(500)
-        .json({ message: "Error fetching orders", error: err.message });
+      return res.status(500).json({ message: "Error fetching orders", error: err.message });
     }
   },
+  
 
   // Get all orders for a specific user
   getUserOrders: async (req, res) => {

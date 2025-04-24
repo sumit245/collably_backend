@@ -132,73 +132,124 @@ router.get("/auth/google/callback", authCtrl.googleCallback);
 router.get("/auth/instagram", passport.authenticate("facebook"));
 
 // IG Callback
-router.get(
-    "/auth/instagram/callback",
-    passport.authenticate("facebook", { failureRedirect: "/login", session: false }),
-    async (req, res) => {
-      const logs = [];
-      try {
-        const { accessToken, profile } = req.user;
-        logs.push("✅ Facebook login successful");
-        logs.push(`Access Token: ${accessToken.slice(0, 10)}...`);
-  
-        // Step 1: Get Pages linked to user
-        const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
-        const pagesData = await pagesRes.json();
-        logs.push("📄 Pages fetched");
-  
-        if (!pagesData.data || pagesData.data.length === 0) {
-          logs.push("❌ No Facebook Pages found for this user.");
-          return res.json({ message: "Facebook login successful", profile, accessToken, posts: [], logs });
-        }
-  
-        const posts = [];
-  
-        for (const page of pagesData.data) {
-          const pageToken = page.access_token;
-          logs.push(`🔍 Checking Page: ${page.name} (${page.id})`);
-  
-          // Get Instagram account linked to page
-          const igRes = await fetch(`https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
-          const igData = await igRes.json();
-          logs.push(`IG Data for page: ${JSON.stringify(igData)}`);
-  
-          const igId = igData?.instagram_business_account?.id;
-          if (!igId) {
-            logs.push(`❌ No Instagram business account linked to page ${page.name}`);
-            continue;
-          }
-  
-          logs.push(`✅ Found IG business account: ${igId}`);
-  
-          // Get Instagram username
-          const usernameRes = await fetch(`https://graph.facebook.com/v19.0/${igId}?fields=username&access_token=${pageToken}`);
-          const usernameData = await usernameRes.json();
-          logs.push(`IG Username Response: ${JSON.stringify(usernameData)}`);
-  
-          const igUsername = usernameData?.username || "unknown";
-  
-          // Get media
-          const mediaRes = await fetch(`https://graph.facebook.com/v19.0/${igId}/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${pageToken}`);
-          const mediaData = await mediaRes.json();
-          logs.push(`Media Data Response: ${JSON.stringify(mediaData)}`);
-  
-          posts.push({
-            pageName: page.name,
-            igId,
-            igUsername,
-            media: mediaData.data || [],
-          });
-        }
-  
-        return res.json({ message: "Facebook login successful", profile, accessToken, posts, logs });
-      } catch (err) {
-        console.error("Instagram Fetch Error:", err);
-        logs.push("❌ Error occurred: " + err.message);
-        return res.status(500).json({ message: "Error while fetching Instagram data", logs });
+router.get("/auth/instagram/callback",
+  passport.authenticate("facebook", { failureRedirect: "/login", session: false }),
+  async (req, res) => {
+    const logs = [];
+    try {
+      const { accessToken, profile } = req.user;
+
+      logs.push("✅ Facebook login successful");
+
+      const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
+      const pagesData = await pagesRes.json();
+
+      if (!pagesData.data || pagesData.data.length === 0) {
+        logs.push("❌ No pages found.");
+        return res.json({ success: false, message: "No pages found", logs });
       }
+
+      const posts = [];
+
+      for (const page of pagesData.data) {
+        const pageToken = page.access_token;
+        const pageName = page.name;
+
+        const igRes = await fetch(`https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
+        const igData = await igRes.json();
+        const igId = igData?.instagram_business_account?.id;
+
+        if (!igId) {
+          logs.push(`❌ No IG business account linked to ${pageName}`);
+          continue;
+        }
+
+        const mediaRes = await fetch(
+          `https://graph.facebook.com/v19.0/${igId}/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${pageToken}`
+        );
+        const mediaData = await mediaRes.json();
+
+        posts.push({
+          pageName,
+          igId,
+          media: mediaData.data || [],
+        });
+
+        logs.push(`✅ Media fetched for ${pageName}`);
+      }
+
+      res.json({ success: true, profile, accessToken, posts, logs });
+    } catch (err) {
+      logs.push("❌ Error: " + err.message);
+      console.error("Instagram Fetch Error:", err);
+      res.status(500).json({ success: false, message: "Failed to fetch Instagram posts", logs });
     }
-  );
+  }
+);
+
+
+
+router.get('/login', (req, res) => {
+  const { INSTAGRAM_CLIENT_ID, INSTAGRAM_REDIRECT_URI } = process.env;
+  const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_CLIENT_ID}&redirect_uri=${INSTAGRAM_REDIRECT_URI}&scope=user_profile,user_media&response_type=code`;
+  res.redirect(authUrl);
+});
+
+// Callback - exchange code for token
+router.get('/callback', async (req, res) => {
+  const code = req.query.code;
+  const {
+    INSTAGRAM_CLIENT_ID,
+    INSTAGRAM_CLIENT_SECRET,
+    INSTAGRAM_REDIRECT_URI,
+  } = process.env;
+
+  try {
+    const tokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: INSTAGRAM_CLIENT_ID,
+        client_secret: INSTAGRAM_CLIENT_SECRET,
+        grant_type: 'authorization_code',
+        redirect_uri: INSTAGRAM_REDIRECT_URI,
+        code,
+      }),
+    });
+
+    const tokenData = await tokenRes.json();
+
+    if (tokenData.access_token) {
+      // Optional: Save to DB for reuse
+      res.json({
+        message: 'Instagram Auth Successful',
+        accessToken: tokenData.access_token,
+        userId: tokenData.user_id,
+      });
+    } else {
+      res.status(400).json({ error: 'Failed to get access token', details: tokenData });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get user's Instagram posts
+router.get('/media', async (req, res) => {
+  const { access_token } = req.query; // OR retrieve from DB
+
+  if (!access_token) return res.status(400).json({ error: 'Access token required' });
+
+  try {
+    const mediaRes = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,timestamp,thumbnail_url,username&access_token=${access_token}`);
+    const mediaData = await mediaRes.json();
+    res.json(mediaData);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch Instagram media' });
+  }
+});
   
   
 module.exports = router;
