@@ -8,7 +8,7 @@ router.post("/order", auth, orderCtrl.createOrder);
 
 router.get("/orders", orderCtrl.getUserOrders);
 
-router.get("/order/:id", auth, orderCtrl.getOrderById);
+router.get("/order/:id",  orderCtrl.getOrderById);
 
 router.patch("/order/:id/status", auth, orderCtrl.updateOrderStatus);
 
