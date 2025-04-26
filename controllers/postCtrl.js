@@ -3,8 +3,15 @@ const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
 const mongoose = require("mongoose");
 const puppeteer = require("puppeteer");
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const path = require('path');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const os = require('os');
 
 const postCtrl = {
+ 
   createPost: async (req, res) => {
     try {
       console.log("Uploaded files:", req.files);
@@ -115,6 +122,64 @@ const postCtrl = {
           productPrice: metadata.price || null,
           productURL,
         };
+  
+        // Upload product image to S3 if a product image is available
+        if (metadata.image && metadata.image !== "N/A") {
+          try {
+            const tempFilePath = path.join(os.tmpdir(), `product-${Date.now()}.jpg`);
+  
+            // Download the image to a temporary file
+            await new Promise((resolve, reject) => {
+              const protocol = metadata.image.startsWith('https') ? https : http;
+              const file = fs.createWriteStream(tempFilePath);
+  
+              protocol.get(metadata.image, (response) => {
+                if (response.statusCode !== 200) {
+                  reject(new Error(`Failed to download image: ${response.statusCode}`));
+                  return;
+                }
+  
+                response.pipe(file);
+  
+                file.on('finish', () => {
+                  file.close();
+                  resolve();
+                });
+              }).on('error', (err) => {
+                fs.unlink(tempFilePath, () => {});
+                reject(err);
+              });
+            });
+  
+            const fileContent = fs.readFileSync(tempFilePath);
+  
+            const s3 = new S3Client({
+              region: process.env.AWS_DEFAULT_REGION,
+              credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+              },
+            });
+  
+            const uniqueKey = `products/${Date.now()}${path.extname(metadata.image) || '.jpg'}`;
+  
+            const command = new PutObjectCommand({
+              Bucket: process.env.AWS_BUCKET,
+              Key: uniqueKey,
+              Body: fileContent,
+              ContentType: 'image/jpeg',
+            });
+  
+            await s3.send(command);
+  
+            fs.unlinkSync(tempFilePath); // Clean up the temporary file
+  
+            productData.productImage = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${uniqueKey}`;
+            console.log('Product image uploaded to S3:', productData.productImage);
+          } catch (uploadError) {
+            console.error('Error uploading product image to S3:', uploadError);
+          }
+        }
       }
   
       const newPost = new Posts({
