@@ -1,7 +1,7 @@
 const Posts = require("../models/postModel");
 const Users = require("../models/userModel");
 const Comments = require("../models/commentModel");
-const { post } = require("../routes/adminRouter");
+// const { post } = require("../routes/adminRouter");
 
 const adminCtrl = {
   getTotalUsers: async (req, res) => {
