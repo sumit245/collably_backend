@@ -3,10 +3,10 @@ const auth = require("../middleware/auth");
 const postCtrl = require("../controllers/postCtrl");
 const uploadMiddleware = require("../middleware/uploadMiddleware");
 
-// router.post("/posts", auth, uploadMiddleware, postCtrl.createPost);
-router.post("/posts", (req, res) => {
-  return res.json({ success: true, message: "Route hit successfully" });
-});
+router.post("/posts", auth, uploadMiddleware, postCtrl.createPost);
+// router.post("/posts", (req, res) => {
+//   return res.json({ success: true, message: "Route hit successfully" });
+// });
 
 router.get("/posts", postCtrl.getPosts); 
 router.delete('/posts/deleteAll', postCtrl.deleteAllPosts);
