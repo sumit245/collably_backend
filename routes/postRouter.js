@@ -4,9 +4,10 @@ const postCtrl = require("../controllers/postCtrl");
 const uploadMiddleware = require("../middleware/uploadMiddleware");
 
 // router.post("/posts", auth, uploadMiddleware, postCtrl.createPost);
-router.post("/posts", auth, (req, res) => {
-  res.json({ success: true, msg: "Auth passed" });
+router.post("/posts", auth, uploadMiddleware, (req, res) => {
+  res.json({ success: true, msg: "Upload passed" });
 });
+
 
 
 router.get("/posts", postCtrl.getPosts); 
