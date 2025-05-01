@@ -17,7 +17,7 @@ const postCtrl = {
       console.log("Uploaded files:", req.files);
   
       const mediaFiles = req.files.media || [];
-      const brandLogoFile = req.files.brandLogo?.[0];
+      // const brandLogoFile = req.files.brandLogo?.[0];
   
       if (mediaFiles.length === 0) {
         return res.status(400).json({ msg: "Please add at least one image or video." });
@@ -70,7 +70,7 @@ const postCtrl = {
   
         await page.setViewport({ width: 1280, height: 800 });
   
-        await page.goto(productURL, { waitUntil: "networkidle2", timeout: 30000 });
+        await page.goto(productURL, { waitUntil: "networkidle2", timeout: 60000 });
   
         await new Promise((resolve) => setTimeout(resolve, 3000)); // wait for content to load
   
@@ -189,7 +189,7 @@ const postCtrl = {
         tags: tags ? tags.split(",") : [],
         images,
         video,
-        brandLogo: brandLogoFile ? brandLogoFile.location : null,
+        // brandLogo: brandLogoFile ? brandLogoFile.location : null,
         user: req.user._id,
         product: {
           title: productData.productTitle,
@@ -217,7 +217,7 @@ const postCtrl = {
   updatePost: async (req, res) => {
     try {
       const mediaFiles = req.files?.media || [];
-      const brandLogoFile = req.files?.brandLogo?.[0];
+      // const brandLogoFile = req.files?.brandLogo?.[0];
   
       let images = [];
       let video = null;
@@ -245,7 +245,7 @@ const postCtrl = {
   
       if (images.length > 0) updateData.images = images;
       if (video) updateData.video = video;
-      if (brandLogoFile) updateData.brandLogo = brandLogoFile.location;
+      // if (brandLogoFile) updateData.brandLogo = brandLogoFile.location;
   
       const post = await Posts.findOneAndUpdate(
         { _id: req.params.id },
