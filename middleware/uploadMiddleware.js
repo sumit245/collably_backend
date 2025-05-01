@@ -1,10 +1,9 @@
 const multer = require("multer");
 const multerS3 = require("multer-s3");
-const { S3Client } = require("@aws-sdk/client-s3"); // Correct AWS SDK v3 import
+const { S3Client } = require("@aws-sdk/client-s3");
 const path = require("path");
 require("dotenv").config();
 
-// ✅ Correct S3 client initialization
 const s3 = new S3Client({
   region: process.env.AWS_DEFAULT_REGION,
   credentials: {
@@ -13,10 +12,9 @@ const s3 = new S3Client({
   },
 });
 
-// ✅ Remove ACL option to prevent errors
 const storage = multerS3({
   s3: s3,
-  bucket: process.env.AWS_BUCKET, // Your S3 bucket name
+  bucket: process.env.AWS_BUCKET,
   metadata: (req, file, cb) => {
     cb(null, { fieldName: file.fieldname });
   },
@@ -27,7 +25,6 @@ const storage = multerS3({
   },
 });
 
-// ✅ File filter to allow only images/videos
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
     cb(null, true);
@@ -36,23 +33,23 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// ✅ Configure Multer with field-based upload
+// ✅ Do NOT call .fields() here globally
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
-}).fields([
-  { name: "media", maxCount: 5 }, // Multiple media files
-  { name: "brandLogo", maxCount: 1 }, // Single brand logo
-  { name: "productPhoto", maxCount: 5 },
-  {name: "avatar", maxCount: 1 },
-  { name: "blogImage", maxCount: 1 },
-  { name: "image", maxCount: 1 },
-]);
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
 
-// ✅ Middleware for handling upload errors
+// ✅ Apply .fields([...]) inside middleware
 const uploadMiddleware = (req, res, next) => {
-  upload(req, res, (err) => {
+  upload.fields([
+    { name: "media", maxCount: 5 },
+    { name: "brandLogo", maxCount: 1 },
+    { name: "productPhoto", maxCount: 5 },
+    { name: "avatar", maxCount: 1 },
+    { name: "blogImage", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+  ])(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       console.error("Multer error:", err);
       return res.status(400).json({ error: `Multer error: ${err.message}` });
@@ -60,7 +57,8 @@ const uploadMiddleware = (req, res, next) => {
       console.error("S3 Upload Error:", err);
       return res.status(500).json({ error: `S3 upload error: ${err.message}` });
     }
-    next(); // Proceed if no errors
+    console.log("Files parsed by multer:", req.files); // Optional: debug
+    next();
   });
 };
 
