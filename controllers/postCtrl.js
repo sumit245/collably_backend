@@ -17,8 +17,6 @@ const postCtrl = {
       console.log("Uploaded files:", req.files);
   
       const mediaFiles = req.files.media || [];
-      // const brandLogoFile = req.files.brandLogo?.[0];
-  
       if (mediaFiles.length === 0) {
         return res.status(400).json({ msg: "Please add at least one image or video." });
       }
@@ -28,9 +26,9 @@ const postCtrl = {
   
       mediaFiles.forEach((file) => {
         if (file.mimetype.startsWith("image/")) {
-          images.push(file.location); // S3 URL
+          images.push(file.location);
         } else if (file.mimetype.startsWith("video/")) {
-          video = file.location; // S3 URL
+          video = file.location;
         }
       });
   
@@ -41,14 +39,13 @@ const postCtrl = {
       const { content, caption, body, tags } = req.body;
       console.log("Extracted data:", { content, caption, body, tags });
   
-      let productData = {};
+      let products = [];
   
-      // Extract product metadata from URL if present in caption
-      const urlMatch = caption?.match(/(https?:\/\/[^\s]+)/);
-      if (urlMatch && urlMatch[0]) {
-        const productURL = urlMatch[0];
-        console.log("Detected product URL:", productURL);
+      // Extract up to 8 product URLs from caption
+      const urlMatches = caption?.match(/(https?:\/\/[^\s]+)/g) || [];
+      const productURLs = urlMatches.slice(0, 8);
   
+      if (productURLs.length > 0) {
         const browser = await puppeteer.launch({
           headless: true,
           args: [
@@ -58,128 +55,134 @@ const postCtrl = {
           ],
         });
   
-        const page = await browser.newPage();
+        // Process all product URLs in parallel
+        products = await Promise.all(
+          productURLs.map(async (productURL) => {
+            const productData = {
+              productTitle: null,
+              productImage: null,
+              productPrice: null,
+              productURL,
+            };
   
-        await page.setUserAgent(
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            try {
+              const page = await browser.newPage();
+              await page.setUserAgent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              );
+              await page.setExtraHTTPHeaders({
+                "Accept-Language": "en-US,en;q=0.9",
+              });
+              await page.setViewport({ width: 1280, height: 800 });
+  
+              console.log("Navigating to product URL:", productURL);
+              await page.goto(productURL, { waitUntil: "networkidle2", timeout: 60000 });
+              await new Promise((resolve) => setTimeout(resolve, 3000));
+  
+              const metadata = await page.evaluate(() => {
+                const getTitle = () =>
+                  document.querySelector('meta[property="og:title"]')?.content ||
+                  document.querySelector("h1")?.innerText ||
+                  document.title ||
+                  "N/A";
+  
+                const getImage = () =>
+                  document.querySelector('meta[property="og:image"]')?.content ||
+                  Array.from(document.images)
+                    .filter((img) => img.width > 200 && img.height > 200)
+                    .sort((a, b) => b.width * b.height - a.width * a.height)[0]?.src ||
+                  "N/A";
+  
+                const getPrice = () => {
+                  const priceSelectors = [
+                    "._30jeq3",
+                    ".price",
+                    '[class*="price"]',
+                  ];
+                  for (const selector of priceSelectors) {
+                    const price = document.querySelector(selector)?.innerText;
+                    if (price) return price;
+                  }
+  
+                  const bodyText = document.body.innerText;
+                  const priceMatch =
+                    bodyText.match(/₹\s?\d{1,3}(,\d{3})*(\.\d{2})?|₹\d+/) ||
+                    bodyText.match(/\$\s?\d{1,3}(,\d{3})*(\.\d{2})?|\$\d+/) ||
+                    bodyText.match(/Rs\.\s?\d+/);
+                  return priceMatch ? priceMatch[0] : "N/A";
+                };
+  
+                return {
+                  title: getTitle(),
+                  image: getImage(),
+                  price: getPrice(),
+                };
+              });
+  
+              await page.close();
+  
+              productData.productTitle = metadata.title;
+              productData.productImage = metadata.image;
+              productData.productPrice = metadata.price;
+  
+              // Upload product image to S3 if available
+              if (productData.productImage && productData.productImage !== "N/A") {
+                try {
+                  const tempFilePath = path.join(os.tmpdir(), `product-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`);
+                  const protocol = productData.productImage.startsWith('https') ? https : http;
+  
+                  // Download image
+                  await new Promise((resolve, reject) => {
+                    const file = fs.createWriteStream(tempFilePath);
+                    protocol.get(productData.productImage, (response) => {
+                      if (response.statusCode !== 200) reject(new Error(`HTTP ${response.statusCode}`));
+                      response.pipe(file);
+                      file.on('finish', () => {
+                        file.close();
+                        resolve();
+                      });
+                    }).on('error', (err) => {
+                      fs.unlink(tempFilePath, () => {});
+                      reject(err);
+                    });
+                  });
+  
+                  // Upload to S3
+                  const s3 = new S3Client({
+                    region: process.env.AWS_DEFAULT_REGION,
+                    credentials: {
+                      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+                    },
+                  });
+  
+                  const uniqueKey = `products/${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(productData.productImage) || '.jpg'}`;
+                  const command = new PutObjectCommand({
+                    Bucket: process.env.AWS_BUCKET,
+                    Key: uniqueKey,
+                    Body: fs.readFileSync(tempFilePath),
+                    ContentType: 'image/jpeg',
+                  });
+  
+                  await s3.send(command);
+                  fs.unlinkSync(tempFilePath);
+  
+                  productData.productImage = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${uniqueKey}`;
+                } catch (uploadError) {
+                  console.error('Error uploading product image:', uploadError);
+                  productData.productImage = null;
+                }
+              }
+  
+              return productData;
+            } catch (error) {
+              console.error(`Error processing product URL ${productURL}:`, error);
+              return productData; // Return partial data with URL
+            }
+          })
         );
   
-        await page.setExtraHTTPHeaders({
-          "Accept-Language": "en-US,en;q=0.9",
-        });
-  
-        await page.setViewport({ width: 1280, height: 800 });
-  
-        await page.goto(productURL, { waitUntil: "networkidle2", timeout: 60000 });
-  
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // wait for content to load
-  
-        const metadata = await page.evaluate(() => {
-          const getTitle = () =>
-            document.querySelector('meta[property="og:title"]')?.content ||
-            document.querySelector("h1")?.innerText ||
-            document.title ||
-            "N/A";
-  
-          const getImage = () =>
-            document.querySelector('meta[property="og:image"]')?.content ||
-            Array.from(document.images)
-              .filter((img) => img.width > 200 && img.height > 200)
-              .sort((a, b) => b.width * b.height - a.width * a.height)[0]?.src ||
-            "N/A";
-  
-          const getPrice = () => {
-            const priceSelectors = [
-              "._30jeq3", // Flipkart price
-              ".price", // Generic class
-              '[class*="price"]', // Fallback
-            ];
-            for (const selector of priceSelectors) {
-              const price = document.querySelector(selector)?.innerText;
-              if (price) return price;
-            }
-  
-            const bodyText = document.body.innerText;
-            const priceMatch =
-              bodyText.match(/₹\s?\d{1,3}(,\d{3})*(\.\d{2})?|₹\d+/) ||
-              bodyText.match(/\$\s?\d{1,3}(,\d{3})*(\.\d{2})?|\$\d+/) ||
-              bodyText.match(/Rs\.\s?\d+/);
-            return priceMatch ? priceMatch[0] : "N/A";
-          };
-  
-          return {
-            title: getTitle(),
-            image: getImage(),
-            price: getPrice(),
-          };
-        });
-  
         await browser.close();
-  
-        productData = {
-          productTitle: metadata.title || null,
-          productImage: metadata.image || null,
-          productPrice: metadata.price || null,
-          productURL,
-        };
-  
-        // Upload product image to S3 if a product image is available
-        if (metadata.image && metadata.image !== "N/A") {
-          try {
-            const tempFilePath = path.join(os.tmpdir(), `product-${Date.now()}.jpg`);
-  
-            // Download the image to a temporary file
-            await new Promise((resolve, reject) => {
-              const protocol = metadata.image.startsWith('https') ? https : http;
-              const file = fs.createWriteStream(tempFilePath);
-  
-              protocol.get(metadata.image, (response) => {
-                if (response.statusCode !== 200) {
-                  reject(new Error(`Failed to download image: ${response.statusCode}`));
-                  return;
-                }
-  
-                response.pipe(file);
-  
-                file.on('finish', () => {
-                  file.close();
-                  resolve();
-                });
-              }).on('error', (err) => {
-                fs.unlink(tempFilePath, () => {});
-                reject(err);
-              });
-            });
-  
-            const fileContent = fs.readFileSync(tempFilePath);
-  
-            const s3 = new S3Client({
-              region: process.env.AWS_DEFAULT_REGION,
-              credentials: {
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-              },
-            });
-  
-            const uniqueKey = `products/${Date.now()}${path.extname(metadata.image) || '.jpg'}`;
-  
-            const command = new PutObjectCommand({
-              Bucket: process.env.AWS_BUCKET,
-              Key: uniqueKey,
-              Body: fileContent,
-              ContentType: 'image/jpeg',
-            });
-  
-            await s3.send(command);
-  
-            fs.unlinkSync(tempFilePath); // Clean up the temporary file
-  
-            productData.productImage = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${uniqueKey}`;
-            console.log('Product image uploaded to S3:', productData.productImage);
-          } catch (uploadError) {
-            console.error('Error uploading product image to S3:', uploadError);
-          }
-        }
       }
   
       const newPost = new Posts({
@@ -189,14 +192,13 @@ const postCtrl = {
         tags: tags ? tags.split(",") : [],
         images,
         video,
-        // brandLogo: brandLogoFile ? brandLogoFile.location : null,
         user: req.user._id,
-        product: {
-          title: productData.productTitle,
-          image: productData.productImage,
-          price: productData.productPrice,
-          url: productData.productURL,
-        },
+        products: products.map(p => ({
+          title: p.productTitle,
+          image: p.productImage,
+          price: p.productPrice,
+          url: p.productURL,
+        })),
       });
   
       await newPost.save();
@@ -211,9 +213,6 @@ const postCtrl = {
     }
   },
   
-  
-  
-
   updatePost: async (req, res) => {
     try {
       const mediaFiles = req.files?.media || [];
@@ -453,24 +452,23 @@ const postCtrl = {
 
   deletePost: async (req, res) => {
     try {
-      const post = await Posts.findOneAndDelete({
-        _id: req.params.id,
-        user: req.user._id,
-      });
-
+      const post = await Posts.findByIdAndDelete(req.params.id);
+  
+      if (!post) {
+        return res.status(404).json({ msg: "Post not found." });
+      }
+  
       await Comments.deleteMany({ _id: { $in: post.comments } });
-
+  
       res.json({
         msg: "Post deleted successfully.",
-        newPost: {
-          ...post,
-          user: req.user,
-        },
+        newPost: post,
       });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
   },
+  
 
   reportPost: async (req, res) => {
     try {

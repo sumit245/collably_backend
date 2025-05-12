@@ -32,12 +32,18 @@ const postSchema = new Schema(
       },
     ],
     // New product-related fields
-    product: {
+    // product: {
+    //   title: String,
+    //   price: String,
+    //   image: String,
+    //   url: String
+    // },
+    products: [{
       title: String,
-      price: String,
       image: String,
+      price: String,
       url: String
-    }
+    }]
     
   },
   {
