@@ -658,6 +658,96 @@ const postCtrl = {
     }
   },
 
+  searchPosts: async (req, res) => {
+    try {
+      const { q, category, sort } = req.query;
+      
+      // Base query conditions
+      const queryConditions = [];
+      
+      // Add search query condition if provided
+      if (q && q.trim() !== '') {
+        queryConditions.push({
+          $or: [
+            { 'products.title': { $regex: q, $options: 'i' } },
+            { 'products.price': { $regex: q, $options: 'i' } },
+            { caption: { $regex: q, $options: 'i' } },
+            { content: { $regex: q, $options: 'i' } },
+            { tags: { $regex: q, $options: 'i' } }, // Add search in tags
+            { 'user.username': { $regex: q, $options: 'i' } }, // Search in username
+            { 'user.fullname': { $regex: q, $options: 'i' } }  // Search in fullname
+          ]
+        });
+      }
+      
+      // Add category filter if provided
+      if (category && category !== 'All Categories') {
+        queryConditions.push({ tags: category });
+      }
+      
+      // Combine all conditions with AND logic
+      const finalQuery = queryConditions.length > 0 
+        ? { $and: queryConditions } 
+        : {};
+      
+      // Determine sort order
+      let sortOption = { createdAt: -1 }; // Default: newest first
+      if (sort === 'oldest') {
+        sortOption = { createdAt: 1 };
+      }
+      
+      // Find users whose username or fullname matches the search query for additional filtering
+      if (q && q.trim() !== '') {
+        const users = await Users.find({
+          $or: [
+            { username: { $regex: q, $options: 'i' } },
+            { fullname: { $regex: q, $options: 'i' } }
+          ]
+        }).select('_id');
+        
+        const userIds = users.map(user => user._id);
+        
+        if (userIds.length > 0) {
+          // If we have matching users, add them to the query with OR logic
+          if (queryConditions.length > 0) {
+            // If we already have other conditions, add user condition with OR
+            finalQuery.$and[0].$or.push({ user: { $in: userIds } });
+          } else {
+            // If no other conditions, create a simple query
+            finalQuery.$or = [
+              { user: { $in: userIds } },
+              ...(finalQuery.$or || [])
+            ];
+          }
+        }
+      }
+      
+      // Execute the query with proper sorting
+      const posts = await Posts.find(finalQuery)
+        .sort(sortOption)
+        .populate('user likes', 'avatar username fullname followers')
+        .populate({
+          path: 'comments',
+          populate: {
+            path: 'user likes',
+            select: '-password'
+          }
+        });
+      
+      return res.json({
+        msg: "Search successful",
+        result: posts.length,
+        posts
+      });
+    } catch (err) {
+      console.error("Search error:", err);
+      return res.status(500).json({ msg: err.message });
+    }
+  }
+  
+  
+  
+  ,
 };
 
 module.exports = postCtrl;

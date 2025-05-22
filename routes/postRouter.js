@@ -5,6 +5,7 @@ const uploadMiddleware = require("../middleware/uploadMiddleware");
 
 // router.post("/posts", auth, uploadMiddleware, postCtrl.createPost);
 router.post("/posts", auth, uploadMiddleware, postCtrl.createPost);
+router.get("/searchPosts", postCtrl.searchPosts);
 
 
 
