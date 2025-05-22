@@ -342,6 +342,7 @@ generateOTP: async (req, res) => {
     const expiry = Date.now() + OTP_EXPIRY_TIME;
 
     await OTP.create({ contactNumber, otp, expiry });
+    
 
     const data = JSON.stringify({
       apiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3ZWZjN2ZlYTVmMjc2NDM3NTI1NmM5YiIsIm5hbWUiOiJSaWp1bCBCaGF0aWEiLCJhcHBOYW1lIjoiQWlTZW5zeSIsImNsaWVudElkIjoiNjdlZmM3ZmVhNWYyNzY0Mzc1MjU2Yzk0IiwiYWN0aXZlUGxhbiI6IkJBU0lDX1RSSUFMIiwiaWF0IjoxNzQzNzY3NTUwfQ.yHiZ--dfXGC4qFbZOZ1JNM5tZ9S6znGoM7KDE_txF54",
