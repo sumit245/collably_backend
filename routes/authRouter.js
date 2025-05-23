@@ -151,9 +151,8 @@ router.get(
           logs.push("❌ No Facebook Pages found for this user.");
           return res.json({ message: "Facebook login successful", profile, accessToken, posts: [], logs });
         }
-  
+
         const posts = [];
-  
         for (const page of pagesData.data) {
           const pageToken = page.access_token;
           logs.push(`🔍 Checking Page: ${page.name} (${page.id})`);
