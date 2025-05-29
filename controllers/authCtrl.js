@@ -542,12 +542,14 @@ verifyOTP: async (req, res) => {
 };
 
 // Helper functions to create access and refresh tokens
+// const createAccessToken = (payload) => {
+//   return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+//     expiresIn: "1d",
+//   });
+// };
 const createAccessToken = (payload) => {
-  return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: "1d",
-  });
+  return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET);
 };
-
 const createRefreshToken = (payload) => {
   return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: "30d",
