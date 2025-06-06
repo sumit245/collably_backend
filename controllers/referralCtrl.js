@@ -5,7 +5,7 @@ const Users = require("../models/userModel");
 const Brand = require("../models/BrandModel"); // Added Brand model import
 const generateReferralCode = require("../utils/generateReferralCode");
 
-exports.createReferral = async (req, res) => {
+ exports.createReferral = async (req, res) => {
   try {
     const { userId, productUrl } = req.body;
 
@@ -26,16 +26,17 @@ exports.createReferral = async (req, res) => {
       return res.status(400).json({ message: "Referral code already exists" });
     }
 
-    // Parse product URL
+    // Build actualLink (product URL + referral params)
     const parsedUrl = new URL(productUrl);
-
-    // Inject both creator username and referral code in query
     parsedUrl.searchParams.set("c", username);
     parsedUrl.searchParams.set("referralCode", referralCode);
+    const actualLink = parsedUrl.toString();
 
-    const referralLink = parsedUrl.toString();
+    // Construct referral link hosted on our app
+    const encodedUsername = encodeURIComponent(username);
+    const referralLink = `https://newapp.collably.in/${encodedUsername}/${referralCode}`;
 
-    // Brand match (optional)
+    // Optional: brand detection
     const brands = await Brand.find({}, "brandWebsite");
     const getDomain = url => {
       try {
@@ -44,13 +45,11 @@ exports.createReferral = async (req, res) => {
         return null;
       }
     };
-
     const productDomain = getDomain(productUrl);
     const matchedBrand = brands.find(brand => {
       const brandDomain = getDomain(brand.brandWebsite);
       return brandDomain && productDomain.includes(brandDomain);
     });
-
     const brandId = matchedBrand ? matchedBrand._id : null;
 
     const referral = new Referral({
@@ -59,6 +58,7 @@ exports.createReferral = async (req, res) => {
       username,
       referralCode,
       referralLink,
+      actualLink, // ✅ Save full redirectable product URL here
       iscount: 0,
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
@@ -76,6 +76,9 @@ exports.createReferral = async (req, res) => {
     res.status(500).json({ message: "Error creating referral" });
   }
 };
+
+
+
 
 
 exports.getReferralsByUserId = async (req, res) => {

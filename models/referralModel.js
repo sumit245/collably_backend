@@ -35,6 +35,11 @@ const referralSchema = new mongoose.Schema(
       image: String,
       url: String
     },
+    actualLink: {
+  type: String,
+  required: true,
+},
+
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

@@ -1,3 +1,5 @@
+const Referral = require('./models/referralModel');  
+
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
@@ -54,6 +56,30 @@ app.use("/api", require("./routes/productRouter"));
 app.use("/api", require("./routes/referralRouter"));
 app.use("/api", require("./routes/orderRouter"));
 app.use("/api", require("./routes/brandsApi"));
+app.get('/:username/:referralCode', async (req, res) => {
+  try {
+    const referralCode = req.params.referralCode;
+
+    console.log('Redirect request for referral code:', referralCode);
+
+    // Just find by referralCode (ignore username)
+    const referral = await Referral.findOne({ referralCode });
+
+    if (!referral) {
+      console.log('Referral not found');
+      return res.status(404).send('Referral not found');
+    }
+
+    console.log('Redirecting to:', referral.actualLink);
+    return res.redirect(referral.actualLink);
+  } catch (err) {
+    console.error('Redirect route error:', err);
+    return res.status(500).send('Error redirecting referral');
+  }
+});
+
+
+
 
 //#endregion
 
