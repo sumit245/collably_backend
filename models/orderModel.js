@@ -43,6 +43,11 @@ const orderSchema = new Schema(
       enum: ["pending", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
+    orderId: {
+  type: String,
+  unique: true,
+  required: true
+},
     createdAt: {
       type: Date,
       default: Date.now,

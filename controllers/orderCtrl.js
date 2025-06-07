@@ -2,66 +2,115 @@ const Order = require("../models/orderModel");
 const User = require("../models/userModel");
 const Product = require("../models/productModel");
 const Brand = require("../models/BrandModel");
+const https = require("https");
+
 
 const orderCtrl = {
   // Create a new order
-  createOrder: async (req, res) => {
-    try {
-      const { items, shippingAddress, totalAmount, paymentStatus } = req.body;
 
-      // Ensure the user exists
-      const user = await User.findById(req.user._id);
-      if (!user) {
-        return res.status(404).json({ msg: "User not found" });
+
+createOrder: async (req, res) => {
+  try {
+    const { items, shippingAddress, totalAmount, paymentStatus } = req.body;
+
+    // Ensure the user exists
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // Process items
+    const updatedItems = [];
+    for (let i = 0; i < items.length; i++) {
+      const product = await Product.findById(items[i].product);
+      if (!product) {
+        return res
+          .status(404)
+          .json({ msg: `Product with id ${items[i].product} not found` });
       }
 
-      // Process the items and ensure brandId is added
-      const updatedItems = [];
-      for (let i = 0; i < items.length; i++) {
-        const product = await Product.findById(items[i].product); // Get the product from DB
-        if (!product) {
-          return res
-            .status(404)
-            .json({ msg: `Product with id ${items[i].product} not found` });
-        }
-
-        // Attach the brandId to the order item
-        updatedItems.push({
-          product: product._id,
-          quantity: items[i].quantity,
-          price: items[i].price,
-        });
-      }
-
-      // Create the order
-      const newOrder = new Order({
-        user: req.user._id,
-        items: updatedItems,
-        shippingAddress,
-        totalAmount,
-        paymentStatus,
+      updatedItems.push({
+        product: product._id,
+        quantity: items[i].quantity,
+        price: items[i].price,
       });
-
-      await newOrder.save();
-
-      // Fetch the newly created order and populate the 'product' field in the items
-      const populatedOrder = await Order.findById(newOrder._id)
-        .populate("items.product") // Populate the product details
-        .exec();
-
-      // Now that 'product' is populated, we can also access brandId from it
-      populatedOrder.items.forEach((item) => {
-        item.product.brandId = item.product.brandId; // Ensure brandId is included
-      });
-
-      res
-        .status(201)
-        .json({ msg: "Order created successfully", order: populatedOrder });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: "Error creating order" });
     }
-  },
+
+    // 🔥 Generate orderId like CollabJune25251
+    const currentDate = new Date();
+    const month = currentDate.toLocaleString("default", { month: "long" });
+    const year = currentDate.getFullYear();
+
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const monthlyOrderCount = await Order.countDocuments({ createdAt: { $gte: startOfMonth } });
+
+    const orderId = `Collab${month}${year}${monthlyOrderCount + 1}`;
+
+    // Create and save the order
+    const newOrder = new Order({
+      user: req.user._id,
+      items: updatedItems,
+      shippingAddress,
+      totalAmount,
+      paymentStatus,
+      orderId // ← Save the custom orderId
+    });
+
+    await newOrder.save();
+
+    // Get product details
+    const populatedOrder = await Order.findById(newOrder._id).populate("items.product").exec();
+
+    // 🟢 Prepare WhatsApp message
+    const userName = (
+      user.fullname || user.name || user.firstName || user.username || "Customer"
+    ).trim();
+
+    const payload = {
+      apiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3ZWZjN2ZlYTVmMjc2NDM3NTI1NmM5YiIsIm5hbWUiOiJSaWp1bCBCaGF0aWEiLCJhcHBOYW1lIjoiQWlTZW5zeSIsImNsaWVudElkIjoiNjdlZmM3ZmVhNWYyNzY0Mzc1MjU2Yzk0IiwiYWN0aXZlUGxhbiI6IkJBU0lDX1RSSUFMIiwiaWF0IjoxNzQzNzY3NTUwfQ.yHiZ--dfXGC4qFbZOZ1JNM5tZ9S6znGoM7KDE_txF54",
+      campaignName: "order_whatsapp",
+      destination: `+91${user.contactNumber}`,
+      userName: userName,
+      source: "order-confirmation",
+      templateParams: [
+        userName,
+        orderId
+      ],
+      paramsFallbackValue: {
+        FirstName: "Customer"
+      }
+    };
+
+    const data = JSON.stringify(payload);
+
+    const options = {
+      hostname: "backend.api-wa.co",
+      path: "/campaign/digintra/api/v2",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(data)
+      }
+    };
+
+    const request = https.request(options, (response) => {
+      let responseBody = "";
+      response.on("data", (chunk) => { responseBody += chunk; });
+      response.on("end", () => { console.log("WhatsApp API response:", responseBody); });
+    });
+
+    request.on("error", (error) => {
+      console.error("WhatsApp API error:", error.message);
+    });
+
+    request.write(data);
+    request.end();
+
+    res.status(201).json({ msg: "Order created successfully", order: populatedOrder });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Error creating order" });
+  }
+},
+
 
   // Get orders by product's brand
   getBrandOrders: async (req, res) => {
