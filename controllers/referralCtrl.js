@@ -34,7 +34,7 @@ const generateReferralCode = require("../utils/generateReferralCode");
 
     // Construct referral link hosted on our app
     const encodedUsername = encodeURIComponent(username);
-    const referralLink = `https://newapp.collably.in/${encodedUsername}/${referralCode}`;
+    const referralLink = `https://collably.in/${encodedUsername}/${referralCode}`;
 
     // Optional: brand detection
     const brands = await Brand.find({}, "brandWebsite");
