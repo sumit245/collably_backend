@@ -555,6 +555,28 @@ const postCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+unSaveAllPosts: async (req, res) => {
+  try {
+    const user = await Users.findOneAndUpdate(
+      { _id: req.user._id },
+      { $set: { saved: [] } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(400).json({ msg: "User does not exist." });
+    }
+
+    res.json({
+      msg: "All saved posts removed successfully.",
+      saved: user.saved  // should be []
+    });
+  } catch (err) {
+    console.error("Error in unSaveAllPosts:", err);
+    return res.status(500).json({ msg: "Server error" });
+  }
+}
+,
 
   getSavePost: async (req, res) => {
     try {
