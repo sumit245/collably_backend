@@ -294,13 +294,18 @@ const postCtrl = {
     }
   },
   deleteAllPosts: async (req, res) => {
-    try {
-      await Posts.deleteMany({});
-      res.json({ msg: "All posts have been deleted successfully." });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
-    }
-  },
+  try {
+    // Delete all posts
+    await Posts.deleteMany({});
+
+    // Remove all saved references from users
+    await Users.updateMany({}, { $set: { saved: [] } });
+
+    res.json({ msg: "All posts have been deleted and unsaved from all users." });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+},
   
   
 
@@ -451,23 +456,31 @@ const postCtrl = {
   },
 
   deletePost: async (req, res) => {
-    try {
-      const post = await Posts.findByIdAndDelete(req.params.id);
-  
-      if (!post) {
-        return res.status(404).json({ msg: "Post not found." });
-      }
-  
-      await Comments.deleteMany({ _id: { $in: post.comments } });
-  
-      res.json({
-        msg: "Post deleted successfully.",
-        newPost: post,
-      });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
+  try {
+    const post = await Posts.findByIdAndDelete(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ msg: "Post not found." });
     }
-  },
+
+    // Delete related comments
+    await Comments.deleteMany({ _id: { $in: post.comments } });
+
+    // Unsave this post from all users
+    await Users.updateMany(
+      { saved: req.params.id },
+      { $pull: { saved: req.params.id } }
+    );
+
+    res.json({
+      msg: "Post deleted successfully and unsaved from all users.",
+      newPost: post,
+    });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+},
+
   
 
   reportPost: async (req, res) => {
